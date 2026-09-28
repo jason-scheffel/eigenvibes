@@ -18,6 +18,17 @@ The project follows the [REUSE](https://reuse.software/) specification. Every fi
 
 If you make substantial changes to a file someone else wrote, add your own `SPDX-FileCopyrightText` line below theirs. Files that cannot hold comments are listed in `REUSE.toml` instead. Run `reuse lint` before opening a pull request.
 
+## Setup
+
+Install [uv](https://docs.astral.sh/uv/), then run from the repository root:
+
+- `uv sync`: install Python 3.14, the project, and the development tools
+- `uv run pre-commit install`: run the checks (ruff, mypy, reuse) on every commit; do this once per clone
+- `uv run pre-commit run --all-files`: run the checks on every file
+- `uv run pytest`: run the tests
+
+CI runs the same checks and tests on Linux, Windows, and macOS for every pull request.
+
 ## Workflow
 
 All changes go through a pull request into `master`. Pull requests are squash-merged, so each one becomes a single commit on `master`.
