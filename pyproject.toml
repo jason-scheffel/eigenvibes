@@ -19,6 +19,12 @@ dev = [
     "ruff>=0.16.9",
 ]
 
+[tool.ruff.lint]
+extend-select = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
 [tool.mypy]
 strict = true
 files = ["src", "tests"]
