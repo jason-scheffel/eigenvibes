@@ -22,7 +22,7 @@ If you make substantial changes to a file someone else wrote, add your own `SPDX
 
 Install [uv](https://docs.astral.sh/uv/), then run from the repository root:
 
-- `uv sync`: install Python 3.14, the project, and the development tools
+- `uv sync --extra <cpu|cu130|rocm>`: install Python 3.14, the project, PyTorch, and the development tools; see [Installation](README.md#installation) for which extra to use
 - `uv run pre-commit install`: run the checks (ruff, mypy, reuse) on every commit; do this once per clone
 - `uv run pre-commit run --all-files`: run the checks on every file
 - `uv run pytest`: run the tests
