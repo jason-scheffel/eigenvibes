@@ -1,2 +1,18 @@
-# SPDX-FileCopyrightText: 2026 Jason Scheffel <contact@jasonscheffel.com>
-# SPDX-License-Identifier: CC0-1.0
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+.env
+
+.DS_Store
+Thumbs.db
+
+.idea/
+.vscode/
+*.swp
+*~
