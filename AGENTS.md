@@ -11,10 +11,12 @@ Follow [CONTRIBUTING.md](CONTRIBUTING.md) for licensing, workflow, signing, and 
 
 Use `uv` for everything; do not use `pip` or create other virtual environments.
 
-- `uv sync`: install the project and development tools
+- `uv sync --extra <cpu|cu130|rocm>`: install the project, PyTorch, and development tools; use the extra that matches the machine's GPU (see the README)
 - `uv add <package>` / `uv add --dev <package>`: add a dependency; commit `pyproject.toml` and `uv.lock` together
 - `uv run pre-commit run --all-files`: run ruff, mypy, and reuse
 - `uv run pytest`: run the tests
+
+Plain `uv sync` and `uv remove` uninstall PyTorch; run `uv sync --extra ...` again after them. Do not add `torch` to `dependencies`; it is only installed through the extras.
 
 The checks and tests must pass before committing.
 
@@ -29,7 +31,7 @@ The checks and tests must pass before committing.
 - Keep the shared package in `src/eigenvibes/`. Changes to it go in their own pull request, not mixed with experiment code.
 - Never commit downloaded data.
 - Use `torch.float64` for all tensors and model parameters.
-- Use a CUDA GPU when one is available and fall back to the CPU otherwise; all code must run on a CPU-only machine.
+- Use a GPU through `torch.cuda` when one is available and fall back to the CPU otherwise; all code must run on a CPU-only machine. The ROCm build of PyTorch exposes AMD GPUs through `torch.cuda` too.
 - Write tests only for behavior that could realistically break. Do not add unit tests for their own sake.
 - Keep code small and direct. Do not add abstractions (base classes, wrappers, registries, config layers, single-use helpers) unless they remove duplication that exists now.
 
