@@ -7,6 +7,13 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 Course project for CSI 436/536 (Fall 2026, University at Albany).
 
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Use of generative AI](#use-of-generative-ai)
+- [License](#license)
+
 ## Requirements
 
 Python 3.14 and [uv](https://docs.astral.sh/uv/). uv installs Python 3.14 itself if it is missing. Intel Macs are not supported because PyTorch no longer publishes builds for them.
