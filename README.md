@@ -30,6 +30,8 @@ Run scripts with `uv run python <script>`.
 This project uses generative AI tools (see section 4.8 of the [course syllabus](https://chong-l.github.io/CSI436_536_26F.html)):
 
 - Coding agents help write and edit some of the code, tests, and documentation.
+- Inline code completion in our editors suggests code as we type, though not all suggestions are accepted.
+- Commit messages and pull request descriptions are sometimes written with AI help.
 - GPT-6 Astra, run locally, is the first reviewer: we run it on changes before pushing them.
 - CodeRabbit then reviews pull requests.
 
