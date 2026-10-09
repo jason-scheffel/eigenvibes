@@ -92,11 +92,11 @@ def test_regional_matches_gathered_channel_mean() -> None:
     nodes of the last layer's output with ``index_select``, which returns a
     C-contiguous copy, and then averaging over channels; with the identity
     node order, that is ``expected`` below. ``mean`` adds the channels in an
-    order that depends on the memory layout, and the last layer's output has
-    stride 1 along the channels, so averaging it without a copy changes the
-    last bits. The last layer has six channels because the two orders give
-    the same sums for one or two channels and, on the CPU this test was
-    written on, for up to four.
+    order that depends on the memory layout, so a last layer with stride 1
+    along the channels, as the earlier implementation's had, averages
+    differently without a copy. The last layer has six channels because the
+    two orders give the same sums for one or two channels and, on the CPU
+    this check was first written on, for up to four.
     """
     torch.manual_seed(42)
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -163,7 +163,7 @@ def test_regional_residuals() -> None:
 def test_rocm_row_limit() -> None:
     """Check that the ROCm guard allows 2**19 rows and rejects one more.
 
-    With one node, the weight-mixing product has one row per sample, so the
+    With one channel, the largest products have one row per sample, so the
     batch size is the row count.
     """
     model: VNN = VNN(

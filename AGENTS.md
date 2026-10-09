@@ -32,7 +32,7 @@ The checks and tests must pass before committing.
 - Never commit downloaded data.
 - Use `torch.float64` for all tensors and model parameters.
 - Use a GPU through `torch.cuda` when one is available and fall back to the CPU otherwise; all code must run on a CPU-only machine. The ROCm build of PyTorch exposes AMD GPUs through `torch.cuda` too.
-- Run large data through GPU models in fixed-size batches. On ROCm, a matrix product with more than 524,288 rows returns wrong values without an error; for the VNN, that means batch size times nodes must stay at or below 524,288. Use the same batch size every time, because the last bits of a result depend on the batch size.
+- Run data through models in fixed-size batches, and use the same batch size every time, because the last bits of a result depend on the batch size. For the VNN, use `VNN.max_batch`: on ROCm, matrix products with more than 524,288 rows return wrong values without an error, and `max_batch` keeps every product in the VNN within that limit.
 - Write tests only for behavior that could realistically break. Do not add unit tests for their own sake.
 - Keep code small and direct. Do not add abstractions (base classes, wrappers, registries, config layers, single-use helpers) unless they remove duplication that exists now.
 

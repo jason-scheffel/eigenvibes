@@ -11,11 +11,14 @@ the plain average of the last layer's outputs over all nodes and channels
 (Sihag et al., "Explainable Brain Age Prediction using coVariance Neural
 Networks", NeurIPS 2023, arXiv:2305.18370, eq. (4)).
 
-The float64 operations in `VNN._forward_with_last_layer` are ordered so that
-outputs and gradients match an earlier implementation bit for bit. Rewrites
-that are equal in exact arithmetic change the last bits, for example
-precomputed powers of ``S``, ``einsum``, ``mean`` for the readout, a fused bias
-add, or contiguous copies of the strided views.
+The forward pass works in the eigenbasis of ``S``. With
+``S = V diag(lambda) V^T``, a filter ``sum_k w_k S^k`` equals
+``V diag(p(lambda)) V^T`` with ``p(lambda) = sum_k w_k lambda^k``, so each layer
+rotates its input into eigen coordinates, scales every coordinate by its
+filter response, and rotates back. In exact arithmetic this equals applying
+``S`` repeatedly, but its cost no longer grows with the number of taps. The
+outputs and gradients match an earlier implementation, which applied ``S``
+repeatedly, up to rounding; the initial parameters match it exactly.
 """
 
 import math
@@ -24,10 +27,12 @@ from typing import Literal
 
 import torch
 
-# On ROCm builds of PyTorch (seen with ROCm 7.2 on an AMD RX 9070 XT), a GPU
-# matrix product whose first operand has more than 2**19 rows silently returns
-# wrong values, which vary between calls, for rows 2**19 and above. The
-# weight-mixing product in `VNN._forward_with_last_layer` has B * N rows.
+# On ROCm builds of PyTorch (seen with ROCm 7.2 on an AMD RX 9070 XT), GPU
+# matrix products with more than 2**19 rows can silently return wrong values,
+# which vary between calls. Run past that limit, this model gave wrong outputs
+# and gradients for most architectures tested, so `VNN.max_batch` keeps every
+# product at or below 2**19 rows. The largest products have one row per sample
+# and channel, B * max(F_1, ..., F_L) rows in all.
 ROCM_MAX_ROWS: int = 2**19
 
 
@@ -52,7 +57,7 @@ class VNN(torch.nn.Module):
     Parameters
     ----------
     covariance : torch.Tensor
-        The matrix ``S``, shape ``(N, N)``. The model stores a float64,
+        The matrix ``S``, shape ``(N, N)``, symmetric. The model stores a float64,
         C-contiguous copy of shape ``(1, 1, N, N)`` on the CPU, detached from
         any autograd graph, as a non-persistent buffer: it moves with
         `torch.nn.Module.to` and is not in the ``state_dict``.
@@ -81,6 +86,12 @@ class VNN(torch.nn.Module):
         ``activations[l - 1]`` is ``sigma_l``.
     covariance : torch.Tensor
         The buffer holding ``S``, float64, shape ``(1, 1, N, N)``.
+    eigenvalues : torch.Tensor
+        The buffer holding the eigenvalues ``lambda`` of ``S`` in ascending
+        order, float64, shape ``(N,)``.
+    eigenvectors : torch.Tensor
+        The buffer holding the matching orthonormal eigenvectors ``V`` of
+        ``S`` as columns, float64, shape ``(N, N)``.
 
     Notes
     -----
@@ -102,14 +113,17 @@ class VNN(torch.nn.Module):
     it ran with float64 as the default dtype and the same activation factory.
 
     On a ROCm build of PyTorch, a GPU matrix product with more than
-    ``ROCM_MAX_ROWS = 2**19`` rows silently returns wrong values for the rows
-    past that limit. One of the model's products has ``B * N`` rows, so on an
-    AMD GPU `forward` and `regional` raise `ValueError` when ``B * N`` exceeds
-    ``2**19``; run the data in fixed-size batches of at most ``2**19 // N``
-    samples. The CPU and CUDA builds for NVIDIA GPUs have no such limit.
+    ``ROCM_MAX_ROWS = 2**19`` rows can silently return wrong values for the
+    rows past that limit. The model's largest products have
+    ``B * max(F_1, ..., F_L)`` rows, so on an AMD GPU `forward` and `regional`
+    raise `ValueError` when ``B`` exceeds `max_batch`; run the data in
+    fixed-size batches of at most `max_batch` samples. The CPU and CUDA builds
+    for NVIDIA GPUs have no such limit.
     """
 
     covariance: torch.Tensor
+    eigenvalues: torch.Tensor
+    eigenvectors: torch.Tensor
 
     def __init__(
         self,
@@ -150,12 +164,25 @@ class VNN(torch.nn.Module):
         # as the earlier implementation did when run with float64 as the
         # default dtype, so later draws, such as minibatch shuffles, match.
         torch.empty(n * in_width, dtype=torch.float64, device="cpu").uniform_()
-        self.register_buffer(
-            "covariance",
-            torch.empty(0, dtype=torch.float64, device="cpu"),
-            persistent=False,
-        )
+        name: str
+        for name in ("covariance", "eigenvalues", "eigenvectors"):
+            self.register_buffer(
+                name,
+                torch.empty(0, dtype=torch.float64, device="cpu"),
+                persistent=False,
+            )
         self.set_covariance(covariance)
+
+    @property
+    def max_batch(self) -> int:
+        """The largest batch whose matrix products stay within 2**19 rows.
+
+        It is ``ROCM_MAX_ROWS // max(F_1, ..., F_L)``. Larger batches raise on
+        a ROCm GPU. Other devices accept any batch, but using this size on
+        every device keeps the batch size, and so the rounding, the same.
+        """
+        widest: int = max(int(weight.shape[0]) for weight in self.weights)
+        return ROCM_MAX_ROWS // widest
 
     def set_covariance(self, covariance: torch.Tensor) -> None:
         """Replace the covariance matrix and keep the learned filters.
@@ -177,11 +204,33 @@ class VNN(torch.nn.Module):
         Parameters
         ----------
         covariance : torch.Tensor
-            The new matrix, shape ``(N', N')``. The model stores a float64,
-            C-contiguous copy of shape ``(1, 1, N', N')``, detached from any
-            autograd graph, on the device of the current one.
+            The new matrix, shape ``(N', N')``, symmetric. The model stores a
+            float64, C-contiguous copy of shape ``(1, 1, N', N')``, detached
+            from any autograd graph, on the device of the current one, and its
+            eigendecomposition, computed on the CPU so that it is the same for
+            every device.
+
+        Raises
+        ------
+        ValueError
+            If ``covariance`` has an entry that is NaN or infinite, for
+            example from missing values in the data, or if it is not
+            symmetric to within ``1e-12`` of its largest absolute entry. The
+            eigendecomposition reads only the lower triangle, so a nonsymmetric
+            matrix would silently be replaced by a different one.
         """
         n: int = covariance.shape[0]
+        matrix: torch.Tensor = covariance.detach().to(device="cpu", dtype=torch.float64)
+        if not torch.isfinite(matrix).all():
+            raise ValueError("the covariance matrix contains NaN or infinite values")
+        if (matrix - matrix.T).abs().max() > 1e-12 * matrix.abs().max():
+            raise ValueError("the covariance matrix must be symmetric")
+        eigenvalues: torch.Tensor
+        eigenvectors: torch.Tensor
+        eigenvalues, eigenvectors = torch.linalg.eigh(matrix)
+        device: torch.device = self.covariance.device
+        self.eigenvalues = eigenvalues.to(device)
+        self.eigenvectors = eigenvectors.contiguous().to(device)
         self.covariance = (
             covariance.detach()
             .reshape(1, 1, n, n)
@@ -210,53 +259,47 @@ class VNN(torch.nn.Module):
             Predictions, float64, shape ``(B,)``.
         last_layer : torch.Tensor
             Output of the last layer after its activation, float64, shape
-            ``(B, F_L, N)``. For elementwise activations its strides are
-            ``(N * F_L, 1, F_L)``, so it is not contiguous when ``F_L > 1``.
+            ``(B, F_L, N)``. For elementwise activations it is C-contiguous.
 
         Raises
         ------
         ValueError
-            If PyTorch is a ROCm build, ``x`` is on the GPU, and ``B * N``
-            exceeds ``ROCM_MAX_ROWS``.
+            If PyTorch is a ROCm build, ``x`` is on the GPU, and ``B`` exceeds
+            `max_batch`.
         """
         batch: int = x.shape[0]
         n: int = self.covariance.shape[-1]
         if (
             torch.version.hip is not None
             and x.device.type == "cuda"
-            and batch * n > ROCM_MAX_ROWS
+            and batch > self.max_batch
         ):
             raise ValueError(
-                f"batch size {batch} times {n} nodes exceeds {ROCM_MAX_ROWS} "
-                "(2**19), above which ROCm GPU matrix products return wrong "
-                "values; run the data in fixed-size batches of at most "
-                f"{ROCM_MAX_ROWS // n} samples"
+                f"batch size {batch} gives matrix products with more than "
+                f"{ROCM_MAX_ROWS} (2**19) rows, above which ROCm GPU matrix "
+                "products can return wrong values; run the data in fixed-size "
+                f"batches of at most {self.max_batch} samples"
             )
         h: torch.Tensor = x.reshape(batch, 1, n)
+        # A contiguous copy of V^T, so that no product has a transposed right
+        # operand, the layout in which the ROCm bug was first seen.
+        rotate_back: torch.Tensor = self.eigenvectors.T.contiguous()
         weight: torch.Tensor
         bias: torch.Tensor
         activation: torch.nn.Module
         for weight, bias, activation in zip(
             self.weights, self.biases, self.activations, strict=True
         ):
-            f: int = weight.shape[0]
-            k: int = weight.shape[1]
-            g: int = weight.shape[2]
-            # Taps h S^0, ..., h S^(K - 1): C-contiguous, each computed from
-            # the previous one.
-            shifted: torch.Tensor = h.reshape(batch, 1, g, n)
-            taps: list[torch.Tensor] = [shifted.reshape(batch, 1, 1, g, n).contiguous()]
-            for _ in range(1, k):
-                shifted = torch.matmul(shifted, self.covariance)
-                taps.append(shifted.reshape(batch, 1, 1, g, n))
-            # Row (b, n) holds node n's value in every tap of every input
-            # channel, tap-major, matching the (F, K, G) order of the weight.
-            # This is a strided view; one matrix product contracts it.
-            rows: torch.Tensor = (
-                torch.cat(taps, dim=2).permute(0, 4, 1, 2, 3).reshape(batch, n, k * g)
+            # powers[k, i] = lambda_i^k, and response[f, g, i] = p(lambda_i)
+            # for the filter from input channel g to output channel f.
+            powers: torch.Tensor = self.eigenvalues ** torch.arange(
+                weight.shape[1], dtype=torch.float64, device=x.device
+            ).reshape(-1, 1)
+            response: torch.Tensor = torch.einsum("fkg,ki->fgi", weight, powers)
+            spectral: torch.Tensor = torch.einsum(
+                "bgi,fgi->bfi", h @ self.eigenvectors, response
             )
-            mixed: torch.Tensor = torch.matmul(rows, weight.reshape(f, k * g).T)
-            h = activation(mixed.transpose(1, 2) + bias)
+            h = activation(spectral @ rotate_back + bias)
         d: int = n * h.shape[1]
         # A product with the constant row 1 / D rather than h.mean(), which
         # rounds differently.
@@ -282,8 +325,8 @@ class VNN(torch.nn.Module):
         Raises
         ------
         ValueError
-            If PyTorch is a ROCm build, ``x`` is on the GPU, and ``B * N``
-            exceeds ``ROCM_MAX_ROWS = 2**19``; see the class Notes.
+            If PyTorch is a ROCm build, ``x`` is on the GPU, and ``B`` exceeds
+            `max_batch`; see the class Notes.
         """
         return self._forward_with_last_layer(x)[0]
 
@@ -317,8 +360,9 @@ class VNN(torch.nn.Module):
         input. Averaging a C-contiguous copy reproduces, bit for bit, regional
         outputs computed as ``y.index_select(2, nodes).mean(dim=1)`` with
         ``nodes`` the indices ``0, ..., N - 1``, which is how they were computed
-        from the earlier implementation's last layer. Averaging ``y`` directly,
-        whose channel axis has stride 1, can change the last bits.
+        from the earlier implementation's last layer, whose channel axis had
+        stride 1. For such a layout, averaging ``y`` directly can change the
+        last bits.
 
         Parameters
         ----------
@@ -338,8 +382,8 @@ class VNN(torch.nn.Module):
             If ``kind`` is not one of the three values, or if ``kind`` is
             ``"normalized_residual"`` and a sample's residual has a norm that
             is exactly zero or not finite (infinite or NaN). Also if PyTorch is
-            a ROCm build, ``x`` is on the GPU, and ``B * N`` exceeds
-            ``ROCM_MAX_ROWS = 2**19``; see the class Notes.
+            a ROCm build, ``x`` is on the GPU, and ``B`` exceeds `max_batch`;
+            see the class Notes.
         """
         prediction: torch.Tensor
         last_layer: torch.Tensor
