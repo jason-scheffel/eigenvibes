@@ -213,13 +213,16 @@ class VNN(torch.nn.Module):
         Raises
         ------
         ValueError
-            If ``covariance`` is not symmetric to within ``1e-12`` of its
-            largest absolute entry. The eigendecomposition reads only the lower
-            triangle, so a nonsymmetric matrix would silently be replaced by a
-            different one.
+            If ``covariance`` has an entry that is NaN or infinite, for
+            example from missing values in the data, or if it is not
+            symmetric to within ``1e-12`` of its largest absolute entry. The
+            eigendecomposition reads only the lower triangle, so a nonsymmetric
+            matrix would silently be replaced by a different one.
         """
         n: int = covariance.shape[0]
         matrix: torch.Tensor = covariance.detach().to(device="cpu", dtype=torch.float64)
+        if not torch.isfinite(matrix).all():
+            raise ValueError("the covariance matrix contains NaN or infinite values")
         if (matrix - matrix.T).abs().max() > 1e-12 * matrix.abs().max():
             raise ValueError("the covariance matrix must be symmetric")
         eigenvalues: torch.Tensor
