@@ -35,16 +35,40 @@ def _data(n: int) -> tuple[torch.Tensor, torch.Tensor]:
     return x, y
 
 
+def _interrupt(trial: optuna.Trial) -> float:
+    """Stand in for an objective that the user stops with Ctrl-C.
+
+    Parameters
+    ----------
+    trial : optuna.Trial
+        The trial being run.
+
+    Returns
+    -------
+    float
+        Never returns.
+
+    Raises
+    ------
+    KeyboardInterrupt
+        Always, after a hyperparameter has been drawn.
+    """
+    trial.suggest_float("lr", *training.LEARNING_RATES, log=True)
+    raise KeyboardInterrupt
+
+
 def test_resumed_search_matches_uninterrupted_search(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Check that stopping and resuming a search changes none of its trials.
 
-    One study runs 12 trials at once. Another runs 11, is loaded again from
-    its storage with a fresh `optuna.Study` object, and runs the last one. The
-    trials must have the same hyperparameters and bitwise the same values.
+    One study runs 12 trials at once. Another runs 6, then has one trial left
+    running, as a killed process leaves it, and one failed by Ctrl-C. It is
+    then loaded again from its storage with a fresh `optuna.Study` object and
+    resumed to 12 finished trials. The finished trials must have the same
+    hyperparameters and bitwise the same values as the uninterrupted ones.
     Twelve trials go past the 10 random start-up trials of `TPESampler`, so
-    the last trial comes from the fitted density model, which depends on the
+    the last trials come from the fitted density model, which depends on the
     earlier trials. The search space and training are shrunk to keep the test
     fast.
     """
@@ -62,17 +86,26 @@ def test_resumed_search_matches_uninterrupted_search(
     training.search(uninterrupted, x, y, n_trials=12, seed=42)
 
     storage: optuna.storages.InMemoryStorage = optuna.storages.InMemoryStorage()
-    optuna.create_study(storage=storage, study_name="resumed")
-    training.search(
-        optuna.load_study(study_name="resumed", storage=storage), x, y, 11, 42
-    )
+    stopped: optuna.Study = optuna.create_study(storage=storage, study_name="resumed")
+    training.search(stopped, x, y, n_trials=6, seed=42)
+    stopped.ask()
+    with pytest.raises(KeyboardInterrupt):
+        stopped.optimize(_interrupt, n_trials=1)
     resumed: optuna.Study = optuna.load_study(study_name="resumed", storage=storage)
     training.search(resumed, x, y, n_trials=12, seed=42)
 
-    assert [t.params for t in resumed.trials] == [
-        t.params for t in uninterrupted.trials
+    finished: list[list[optuna.trial.FrozenTrial]] = [
+        [
+            trial
+            for trial in study.trials
+            if trial.state == optuna.trial.TrialState.COMPLETE
+            or trial.user_attrs.get("diverged", False)
+        ]
+        for study in (resumed, uninterrupted)
     ]
-    assert [t.value for t in resumed.trials] == [t.value for t in uninterrupted.trials]
+    assert len(finished[0]) == 12
+    assert [t.params for t in finished[0]] == [t.params for t in finished[1]]
+    assert [t.value for t in finished[0]] == [t.value for t in finished[1]]
 
 
 def test_early_stopping_restores_best_epoch(monkeypatch: pytest.MonkeyPatch) -> None:

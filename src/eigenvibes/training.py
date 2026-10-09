@@ -32,16 +32,16 @@ import optuna
 import torch
 from sklearn.model_selection import KFold
 
-from eigenvibes.vnn import ROCM_MAX_ROWS, VNN
+from eigenvibes.vnn import VNN
 
 FOLDS: int = 10
 MAX_EPOCHS: int = 1000
 PATIENCE: int = 20
 LEARNING_RATES: tuple[float, float] = (1e-4, 1e-1)
 BATCH_SIZES: tuple[int, ...] = (2, 4, 8, 12, 16, 32, 64)
-MAX_LAYERS: int = 4
+MAX_LAYERS: int = 3
 MAX_WIDTH: int = 256
-MAX_TAPS: int = 64
+MAX_TAPS: int = 32
 
 
 @dataclass(frozen=True)
@@ -127,7 +127,7 @@ def build(x: torch.Tensor, hyperparameters: Hyperparameters, seed: int) -> VNN:
 
 
 def predict(model: VNN, x: torch.Tensor) -> torch.Tensor:
-    """Predict without gradients, in chunks of ``ROCM_MAX_ROWS // N`` samples.
+    """Predict without gradients, in chunks of ``model.max_batch`` samples.
 
     The fixed chunk size keeps every call within the ROCm row limit and makes
     the result independent of how many samples ``x`` holds.
@@ -145,9 +145,7 @@ def predict(model: VNN, x: torch.Tensor) -> torch.Tensor:
         Predictions, shape ``(n,)``.
     """
     with torch.no_grad():
-        return torch.cat(
-            [model(chunk) for chunk in torch.split(x, ROCM_MAX_ROWS // x.shape[1])]
-        )
+        return torch.cat([model(chunk) for chunk in torch.split(x, model.max_batch)])
 
 
 def _train_epoch(
@@ -291,13 +289,19 @@ def cross_validate(
 def search(
     study: optuna.Study, x: torch.Tensor, y: torch.Tensor, n_trials: int, seed: int
 ) -> None:
-    """Run trials in ``study`` until it holds ``n_trials`` of them.
+    """Run trials in ``study`` until it holds ``n_trials`` finished ones.
 
-    Trials run one at a time. Before trial ``t``, counted from 0, the study
-    gets a new ``TPESampler`` with seed ``seed + t``, so a study that was
-    stopped between trials and resumed from its storage picks the same
-    hyperparameters as one run without stopping. A trial whose training
-    diverges on some fold is marked as failed and the search continues.
+    Trials run one at a time. A trial whose training diverges on some fold is
+    marked as failed, with the user attribute ``"diverged"``, and the search
+    continues; it counts as finished. Before finished trial ``t``, counted
+    from 0, the study gets a new ``TPESampler`` with seed ``seed + t``.
+
+    A study can be stopped at any point and resumed from its storage. A trial
+    cut short, which a killed process leaves running and Ctrl-C leaves failed
+    without ``"diverged"``, is marked as failed and not counted, so the
+    resumed study picks the same hyperparameters as one run without stopping.
+    Only one process may use a study at a time: a trial that another process
+    is still running would be marked as failed.
 
     Parameters
     ----------
@@ -306,7 +310,7 @@ def search(
     x, y : torch.Tensor
         Features ``(n, N)`` and targets ``(n,)``.
     n_trials : int
-        Total number of trials the study should hold.
+        Number of finished trials the study should hold.
     seed : int
         Seed for the sampler and for `cross_validate`.
     """
@@ -314,13 +318,27 @@ def search(
     def objective(trial: optuna.Trial) -> float:
         fold_mae: list[float]
         fold_best_epochs: list[int]
-        fold_mae, fold_best_epochs = cross_validate(x, y, suggest(trial), seed)
+        try:
+            fold_mae, fold_best_epochs = cross_validate(x, y, suggest(trial), seed)
+        except FloatingPointError:
+            trial.set_user_attr("diverged", True)
+            raise
         trial.set_user_attr("fold_mae", fold_mae)
         trial.set_user_attr("fold_best_epochs", fold_best_epochs)
         return statistics.fmean(fold_mae)
 
-    while len(study.trials) < n_trials:
-        study.sampler = optuna.samplers.TPESampler(seed=seed + len(study.trials))
+    trial: optuna.trial.FrozenTrial
+    for trial in study.get_trials(states=(optuna.trial.TrialState.RUNNING,)):
+        study.tell(trial.number, state=optuna.trial.TrialState.FAIL)
+    while True:
+        finished: int = sum(
+            trial.state == optuna.trial.TrialState.COMPLETE
+            or trial.user_attrs.get("diverged", False)
+            for trial in study.get_trials()
+        )
+        if finished >= n_trials:
+            break
+        study.sampler = optuna.samplers.TPESampler(seed=seed + finished)
         study.optimize(objective, n_trials=1, catch=(FloatingPointError,))
 
 
