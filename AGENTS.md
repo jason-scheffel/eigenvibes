@@ -41,5 +41,5 @@ The checks and tests must pass before committing.
 Every result must be reproducible bit-for-bit on the same machine and to numerical tolerance across operating systems.
 
 - Pass an explicit seed to every source of randomness. Use `42` when one seed is needed, and `0, 1, 2, ...` when several are. Use `numpy.random.default_rng(seed)` and pass the generator to functions; do not use `np.random.seed` or other global random state.
-- For PyTorch, call `torch.manual_seed(seed)` and `torch.use_deterministic_algorithms(True)`.
+- For PyTorch, call `torch.manual_seed(seed)` and `torch.use_deterministic_algorithms(True)`. On NVIDIA GPUs, deterministic mode also needs the environment variable `CUBLAS_WORKSPACE_CONFIG`; importing `eigenvibes` sets it, so import the package before running anything on the GPU.
 - Sort anything whose order is not guaranteed before using it, such as directory listings (`Path.glob`, `Path.iterdir`) and sets.
