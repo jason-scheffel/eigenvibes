@@ -13,6 +13,8 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 [![REUSE status](https://api.reuse.software/badge/github.com/jason-scheffel/eigenvibes)](https://api.reuse.software/info/github.com/jason-scheffel/eigenvibes)
 
+<p align="center"><img src="docs/crewmates.svg" alt="Hand-drawn Among Us fan art: a red crewmate next to a fallen blue crewmate" width="400"></p>
+
 Course project for CSI 436/536 (Fall 2026, University at Albany).
 
 This project checks whether explanations of neural networks give the right answer. To know the right answer, it uses synthetic data.
@@ -214,6 +216,8 @@ Some findings and bugs were found by AI tools rather than by us. We checked each
 ## License
 
 The code is licensed under the BSD 3-Clause License. See [LICENSE](LICENSE) for the full text. Documentation and other prose, including this README, is under [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt). Config files and the generated data in `data/` are under [CC0 1.0](LICENSES/CC0-1.0.txt).
+
+The crewmate drawing in `docs/crewmates.svg` is fan art and is not under any of these licenses. This project is not affiliated with Among Us or Innersloth LLC; see [the fan art notice](LICENSES/LicenseRef-Among-Us-Fan-Art.txt) for details.
 
 ## References
 
