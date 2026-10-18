@@ -70,13 +70,16 @@ Run scripts with `uv run python <script>`.
 
 ## Datasets
 
-`uv run python scripts/make_datasets.py` writes every dataset to `data/` (gitignored). It takes a few seconds. Then it compares each file's SHA-256 hash with `data/SHA256SUMS`, which is in git and lists the hashes of our files (generated on the DGX). If any file differs, it prints a warning and carries on; the data are still valid, just not bit-for-bit identical to ours (for example, on a different CPU or library version). `cd data && sha256sum -c SHA256SUMS` runs the same check.
+`uv run python scripts/make_datasets.py download` downloads every dataset into `data/` (gitignored) from the [Hugging Face dataset](https://huggingface.co/datasets/jason-scheffel/eigenvibes), at a fixed upload. These are the exact files our results use, generated on the DGX. It then checks each file's SHA-256 hash against `data/SHA256SUMS`, which is in git, and stops with an error if any differs.
+
+`uv run python scripts/make_datasets.py generate` instead writes the datasets from their seeds, in a few seconds, and compares them with the same hashes. On a different CPU or library version some last digits can differ (between the DGX and a desktop, by at most 3.6e-15), so it only prints a warning and carries on; the data are still valid, just not bit-for-bit identical to ours. `cd data && sha256sum -c SHA256SUMS` runs the same check.
 
 ### Files
 
 ```
 data/
   SHA256SUMS                hashes of every file below (in git)
+  README.md                 the Hugging Face dataset card (in git)
   covariance.csv            how the 12 behaviors vary together; the same for every dataset
   design.json               settings and expected answers, for scoring only
   linear/                   sus from the linear formula

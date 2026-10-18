@@ -5,6 +5,7 @@ description = "Course project for CSI 436/536 (Fall 2026, University at Albany).
 license = "BSD-3-Clause"
 requires-python = ">=3.14"
 dependencies = [
+    "huggingface-hub>=2.2.0",
     "matplotlib>=3.11.2",
     "numpy>=2.5.3",
     "optuna>=5.0.0",

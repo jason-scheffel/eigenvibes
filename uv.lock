@@ -3,34 +3,34 @@ revision = 3
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
     "(python_full_version >= '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm') or (python_full_version >= '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm')",
-    "(python_full_version < '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm') or (python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm')",
     "python_full_version >= '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "(python_full_version >= '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm') or (python_full_version >= '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm')",
-    "(python_full_version < '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm') or (python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm')",
     "python_full_version >= '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'win32' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'win32' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'darwin' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
+    "(python_full_version < '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm') or (python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm')",
+    "python_full_version < '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "(python_full_version < '3.15' and sys_platform == 'linux' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm') or (python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm')",
+    "python_full_version < '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'win32' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'darwin' and extra == 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version < '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
 ]
 conflicts = [[
@@ -61,6 +61,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5a/8e/38aa427ed5402449e226975b649c5dc73ccadfefeb95e6aecb8f8ea4b6b6/annotated_doc-0.0.5.tar.gz", hash = "sha256:c7e58ce09192557605d8bbd92836d7e1d520ac9580096042c0bfd197efacf1bb", size = 10758, upload-time = "2026-07-28T13:50:58.129Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3e/30/e900b21425a860e195f32e37657aa1f7c7f2b1bfb26f03ca209b90933c06/annotated_doc-0.0.5-py3-none-any.whl", hash = "sha256:117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101", size = 5302, upload-time = "2026-07-28T13:50:57.239Z" },
+]
+
+[[package]]
+name = "anyio"
+version = "4.15.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "idna", marker = "sys_platform != 'emscripten' or extra == 'extra-10-eigenvibes-cu126' or extra == 'extra-10-eigenvibes-cu130' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm')" },
+    { name = "typing-extensions", marker = "(python_full_version < '3.15' and sys_platform != 'emscripten') or (python_full_version < '3.15' and extra == 'extra-10-eigenvibes-cu126') or (python_full_version < '3.15' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a9/d2/f4d173e22df740bc37b1db102b386ba719b66e95b0f0d751f556b387e6d2/anyio-4.15.1.tar.gz", hash = "sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94", size = 276966, upload-time = "2026-09-05T10:42:39.44Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl", hash = "sha256:6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101", size = 132079, upload-time = "2026-09-05T10:42:37.923Z" },
 ]
 
 [[package]]
@@ -352,7 +365,7 @@ resolution-markers = [
     "(python_full_version < '3.15' and sys_platform == 'linux') or (python_full_version < '3.15' and sys_platform == 'win32')",
 ]
 dependencies = [
-    { name = "cuda-pathfinder", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "cuda-pathfinder", marker = "(python_full_version < '3.15' and sys_platform == 'linux') or (python_full_version < '3.15' and sys_platform == 'win32')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/21/d4/06d25e37b026a638c0393937aaed5568ed3c176edd2a451d109740f8528f/cuda_bindings-12.9.10-cp314-cp314-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:f6bd06606b3c99f9409dd1ca4f8524f11c0733955938f10792b3213f6b163c9c", size = 7005548, upload-time = "2026-10-15T14:12:13.775Z" },
@@ -377,7 +390,7 @@ resolution-markers = [
     "(python_full_version < '3.15' and sys_platform == 'linux') or (python_full_version < '3.15' and sys_platform == 'win32')",
 ]
 dependencies = [
-    { name = "cuda-pathfinder", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "cuda-pathfinder", marker = "(python_full_version < '3.15' and sys_platform == 'linux') or (python_full_version < '3.15' and sys_platform == 'win32')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/e6/3c094ef0eb00a7b0ff69a3915327e2c2d14e712ebe471a2217bf7f020f33/cuda_bindings-13.4.3-cp314-cp314-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4796864ce829bd95ef2ef0d23c6ba21bb64e08f7fab0a377302ed1affb6605c7", size = 6407948, upload-time = "2026-09-23T02:22:18.484Z" },
@@ -518,6 +531,7 @@ name = "eigenvibes"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "huggingface-hub" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "optuna" },
@@ -562,6 +576,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "huggingface-hub", specifier = ">=2.2.0" },
     { name = "matplotlib", specifier = ">=3.11.2" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "optuna", specifier = ">=5.0.0" },
@@ -672,12 +687,112 @@ wheels = [
 ]
 
 [[package]]
+name = "h11"
+version = "0.16.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/ee/02a2c011bdab74c6fb3c75474d40b3052059d95df7e73351460c8588d963/h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1", size = 101250, upload-time = "2025-04-24T03:35:25.427Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86", size = 37515, upload-time = "2025-04-24T03:35:24.344Z" },
+]
+
+[[package]]
+name = "hf-xet"
+version = "1.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9e/27/06d899ea7bd721d272f84aac98bdb238de98af4cc767a69056d967d68c71/hf_xet-1.7.0.tar.gz", hash = "sha256:d406ec79053c0871817f700c2ac8c36ba0d87f9c34b7458b0f0063bb218b0466", size = 985689, upload-time = "2026-10-06T20:18:43.89Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9f/7c/3e45174942e6793adde6cba4daa7fb037275cf02a944d9eadfcf9ff33b86/hf_xet-1.7.0-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:fa029678be1ba7f953c409b0b27bf15cc69cd1c9b3a674fbd78856ebefca1052", size = 3803919, upload-time = "2026-10-06T20:18:09.844Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/3a/5e8b363391adcbb002e191dbf924dab31464ea9c45adfeb73502afc36d35/hf_xet-1.7.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:57bc157b8b7fe3bee9dcb9af7f3da8de41801c3b31a9ef68a77a33c6a6be382f", size = 3553588, upload-time = "2026-10-06T20:18:13.376Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/c2/0d1eaa5da13bbf9c896badc7f380601c7d973a87a6ffb4d100267c4536c1/hf_xet-1.7.0-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:87dab080f8f7d32781c2586904e3603f4e60d09bfc727706c3ae419e0829beeb", size = 4201962, upload-time = "2026-10-06T20:18:16.11Z" },
+    { url = "https://files.pythonhosted.org/packages/23/2d/225d5b11a9ca7d31b9470a57f2b2be1a5cef8b84325a2146aeb4589e226c/hf_xet-1.7.0-cp314-cp314t-manylinux_2_28_aarch64.whl", hash = "sha256:b01fe18dbbd151a2403d2c64ed30dc6547b00d6babab9a617d77c7acdb81ee66", size = 3982978, upload-time = "2026-10-06T20:18:18.092Z" },
+    { url = "https://files.pythonhosted.org/packages/93/34/9d681f0e3dac0b5dae0d7dea748429266f24e52415446523f464fbaa828e/hf_xet-1.7.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:4ee5e05a627f5ab5bad7a86582277d645556ea1e199903aae19e033a392aa13a", size = 4181558, upload-time = "2026-10-06T20:18:20.082Z" },
+    { url = "https://files.pythonhosted.org/packages/de/f0/277f039b7d72027bc2ed277f1b62a2f70f740a5aac2a3e7243e5b6854c5d/hf_xet-1.7.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:19c0e64f14175ccb6a1aff69e0d2ab9ec5269a560e6687abaf2b3fa4f73de7cd", size = 4411546, upload-time = "2026-10-06T20:18:21.999Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/7f/832d3ddb49326114175b7bcc50daea8565c09fd21ac03a02b211c09fefb7/hf_xet-1.7.0-cp314-cp314t-win_amd64.whl", hash = "sha256:757168feb5679647c0bb13ee5d0faebe799c4dff9051419885a566ebd79f949d", size = 3812809, upload-time = "2026-10-06T20:18:24.288Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/c4/310c3c29e5beae7c049e63947bd1923d597883b41c9ec4718589920812c4/hf_xet-1.7.0-cp314-cp314t-win_arm64.whl", hash = "sha256:b91569d5f1b61c34b043687da02c05dd3604f3d329e7868510bf3f7971599006", size = 3646174, upload-time = "2026-10-06T20:18:26.279Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/0b/b03be21ffaada749ba0d3197d8aefbf1aa698bac149580421c15239b299e/hf_xet-1.7.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:e3e88a7a75d7d95cbee1f37dc31341d6201124cf21c6c4b1dfab8ccba9b09e0f", size = 3796096, upload-time = "2026-10-06T20:18:28.43Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/47/a26ebdce7056a61e931f228439bc0ab08cbec239d1690f965e5e637cba79/hf_xet-1.7.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:59fba37039233c7fcbe196817d6cdcf1b40dfb17b410f229d85b0cf0a1848da4", size = 3560352, upload-time = "2026-10-06T20:18:30.365Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/4c/2bf3b66c215d409655f28de1622393dde04c9461280d48c7924bb3b2decd/hf_xet-1.7.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:2814a6e999d13464c4d679b788cc5d784eb5a4edfc638a31f10e9a11ab531ef8", size = 4212180, upload-time = "2026-10-06T20:18:32.292Z" },
+    { url = "https://files.pythonhosted.org/packages/49/0c/a2f703a5a78267556e89e03316fa0805c86b72b50829bc67665746e8ebf0/hf_xet-1.7.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fcfd6c22418e57dd5b3aea649e813b2e2cfb2aebf317b210d90f1fe4b3018b52", size = 3990011, upload-time = "2026-10-06T20:18:34.21Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/77/e52e4201b1cbf571530a61cc57f70182045a39a230089ee5f1df182a4de2/hf_xet-1.7.0-cp38-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:80f79dae613ce9e0ea1fd1ae15616ca9ac74aed4c770aabc199c4f03ebecc863", size = 4190628, upload-time = "2026-10-06T20:18:36.062Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/dc/03a21b89f118664a0926ff25b0f8e44a519bf22724a6a8fc7a9abbc188b6/hf_xet-1.7.0-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:0a9e802f33bf50c851abe45fc5380e61f959e2d369647d6742b79ad9d6c27cab", size = 4418814, upload-time = "2026-10-06T20:18:37.888Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/59/b35106dfa71b6eef605dc88bd038fe99c7f86fb132a15b60d0bf2f235b2c/hf_xet-1.7.0-cp38-abi3-win_amd64.whl", hash = "sha256:2b7bb5727889b0f2436dbaaad8fc4c3e66b8240d992716989e0c086b4278b1bc", size = 3822644, upload-time = "2026-10-06T20:18:40.052Z" },
+    { url = "https://files.pythonhosted.org/packages/48/cd/072313585f74fe9d441e2eb5e0a4703c30586cd709810ea369675f61b74e/hf_xet-1.7.0-cp38-abi3-win_arm64.whl", hash = "sha256:acc3851cf2576a8fb2ae926da863f4efabe21303cf292e9a44332802ab0dcc6a", size = 3662436, upload-time = "2026-10-06T20:18:42.205Z" },
+]
+
+[[package]]
+name = "httpcore2"
+version = "2.13.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "h11", marker = "sys_platform != 'emscripten' or extra == 'extra-10-eigenvibes-cu126' or extra == 'extra-10-eigenvibes-cu130' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm')" },
+    { name = "truststore", marker = "sys_platform != 'emscripten' or extra == 'extra-10-eigenvibes-cu126' or extra == 'extra-10-eigenvibes-cu130' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cb/f3/1db7aa2bc2524062192bb0e0323969492d1883152a232fe36eea65f4e35c/httpcore2-2.13.1.tar.gz", hash = "sha256:e0aa977abe17e69a3b820a24542a6fa88702676d83880b8d194dcd18408e5103", size = 68071, upload-time = "2026-09-23T07:47:22.372Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/09/ba/a4568248771ce81957bfb7cc600264a40fbcda092391ee1c415c50be4bea/httpcore2-2.13.1-py3-none-any.whl", hash = "sha256:e1e05d4f25f7d7d496bfb96748f6f4b67657b03da069b3a68c36069f3db73d0a", size = 83423, upload-time = "2026-09-23T07:47:19.365Z" },
+]
+
+[[package]]
+name = "httpx2"
+version = "2.13.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio", marker = "sys_platform != 'emscripten' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm')" },
+    { name = "httpcore2", marker = "sys_platform != 'emscripten' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm')" },
+    { name = "httpx2-jsfetch", marker = "sys_platform == 'emscripten' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm')" },
+    { name = "idna" },
+    { name = "truststore", marker = "sys_platform != 'emscripten' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d5/44/474bef2a0e9d90f1715d32cb98b0738695ca17ba324095fb2497ed7fbd59/httpx2-2.13.1.tar.gz", hash = "sha256:e48744a19e3af5ee48313d0ce5fe941d5422fae5705ea922a4aabf94d7800dfa", size = 100405, upload-time = "2026-09-23T07:47:23.052Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d8/9c/6fe8931fd9f381042a9e4c7d5a7b4cbf7016b252bec0c99a49fce42c3326/httpx2-2.13.1-py3-none-any.whl", hash = "sha256:6dff50fabc270ee5fd25d845d0b078ed20564579744d6d962850975996d2f9a4", size = 95597, upload-time = "2026-09-23T07:47:20.995Z" },
+]
+
+[[package]]
+name = "httpx2-jsfetch"
+version = "1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/c4/0e5636363151a2a1795e0a77617168b9ca438e1748ec05fc9b5687f93d64/httpx2_jsfetch-1.0.tar.gz", hash = "sha256:70a0e3eabfef7cce5ad9c629f7d01ca05e418f586646f4ddf14782e4c1454c60", size = 6872, upload-time = "2026-08-07T00:13:07.492Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/43/832f631d32e4f1211caa2ba368317739fe71f0b8530e4c9d15dc454bac2a/httpx2_jsfetch-1.0-py3-none-any.whl", hash = "sha256:cb916b707601e69a07721aabc8f3f6659be3a6893bc1ff5c6f9e02241df2da32", size = 6382, upload-time = "2026-08-07T00:13:06.567Z" },
+]
+
+[[package]]
+name = "huggingface-hub"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "filelock" },
+    { name = "fsspec" },
+    { name = "hf-xet", marker = "platform_machine == 'AMD64' or platform_machine == 'ARM64' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64' or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130') or (extra == 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-rocm') or (extra == 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm')" },
+    { name = "httpx2" },
+    { name = "packaging" },
+    { name = "pyyaml" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/12/47/6858d63643e66fb4f6585c3cfd4029c0b2bc1ae21688cee9b3335f20a10d/huggingface_hub-2.2.0.tar.gz", hash = "sha256:5d1b47537394e4215cb858aa12fd493d0f7ef7f58990f5dcd24bc173107b2871", size = 1041026, upload-time = "2026-10-08T15:30:59.971Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/b0/0f7b430fd100b3a3b037fdbb314878200241082e607b3383c63d91a13a72/huggingface_hub-2.2.0-py3-none-any.whl", hash = "sha256:1667f145dc56dc210d60966069397df9ecfca9607a5d43db88b308c89dae56b3", size = 839884, upload-time = "2026-10-08T15:30:57.914Z" },
+]
+
+[[package]]
 name = "identify"
 version = "2.6.20"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/53/35/d70c0006c7cee65999ea94a6273e60b2094f600a3d8b71b04318253fc643/identify-2.6.20.tar.gz", hash = "sha256:ad729860a923858d26917c2f4fb0a1d83d27a75b1e090c06440c573f048f3285", size = 99681, upload-time = "2026-09-26T20:29:07.187Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fa/70/fffc9613501877c0a10a1ef73a165e6ded3e53f6e7502227fef56d973933/identify-2.6.20-py2.py3-none-any.whl", hash = "sha256:6a16b69b93187244e0548cbfd25b3e4a6f9a7a2ad784625c3bec2b8d27b81aaa", size = 99506, upload-time = "2026-09-26T20:29:06.054Z" },
+]
+
+[[package]]
+name = "idna"
+version = "3.20"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/08/8eea9d4b8302028f3abb2c0813953f7aec26d33b7a8960ed760e65ff29fa/idna-3.20.tar.gz", hash = "sha256:a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44", size = 216463, upload-time = "2026-09-17T14:11:04.752Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl", hash = "sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c", size = 69583, upload-time = "2026-09-17T14:11:03.168Z" },
 ]
 
 [[package]]
@@ -2128,14 +2243,14 @@ version = "2.14.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
-    "python_full_version < '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version >= '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform == 'emscripten' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra == 'extra-10-eigenvibes-rocm'",
+    "python_full_version < '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra != 'extra-10-eigenvibes-cu126' and extra == 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
     "python_full_version < '3.15' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-10-eigenvibes-cpu' and extra == 'extra-10-eigenvibes-cu126' and extra != 'extra-10-eigenvibes-cu130' and extra != 'extra-10-eigenvibes-rocm'",
 ]
 dependencies = [
@@ -2164,10 +2279,10 @@ version = "2.14.0+cpu"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version < '3.15' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version < '3.15' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.15' and sys_platform == 'win32'",
+    "python_full_version < '3.15' and sys_platform == 'emscripten'",
     "python_full_version < '3.15' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
@@ -2332,6 +2447,15 @@ wheels = [
     { url = "https://download-r2.pytorch.org/whl/triton_rocm-3.8.0-cp314-cp314t-linux_x86_64.whl", hash = "sha256:c6179f3ebecb30a7211e154ded82968b62d762742d5ac33b68f39e335744c3cc", upload-time = "2026-09-02T00:56:15Z" },
     { url = "https://download-r2.pytorch.org/whl/triton_rocm-3.8.0-cp315-cp315-linux_x86_64.whl", hash = "sha256:226ee6dec7547aeb10ed63976cf9a25714bffc048a78d46afbc0ba0a54cb8ad6", upload-time = "2026-09-02T00:56:27Z" },
     { url = "https://download-r2.pytorch.org/whl/triton_rocm-3.8.0-cp315-cp315t-linux_x86_64.whl", hash = "sha256:b1440a69b3e8fd78545e4139adfde39e1fc69fd4aeff61390e14c3e30aa4a33e", upload-time = "2026-09-02T00:56:40Z" },
+]
+
+[[package]]
+name = "truststore"
+version = "0.10.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/9f/c5201d42a484c061e528825fc8e2d565f5abd50a4ced6fb7d29c4ec99b2b/truststore-0.10.5.tar.gz", hash = "sha256:30d36967ccaded5cbb38d602c433f53600036c79d502f4533a49b60a03bbefcd", size = 28091, upload-time = "2026-10-12T22:27:31.808Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/e9/3a7820be2bb0fe53b6bc9c3be26d3d1158004e4c3ab953aa6840b955b1e9/truststore-0.10.5-py3-none-any.whl", hash = "sha256:9aaaedaefaf06d8b206278cf8b5012bc897f485a874503501e12d776df78951c", size = 19017, upload-time = "2026-10-12T22:27:30.377Z" },
 ]
 
 [[package]]

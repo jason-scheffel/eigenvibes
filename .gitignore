@@ -19,5 +19,6 @@ Thumbs.db
 
 /data/*
 !/data/SHA256SUMS
+!/data/README.md
 
 /results/
