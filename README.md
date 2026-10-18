@@ -43,6 +43,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 - [Installation](#installation)
 - [Datasets](#datasets)
 - [GPU benchmark](#gpu-benchmark)
+- [Tuning](#tuning)
 - [Contributors](#contributors)
 - [Use of generative AI](#use-of-generative-ai)
 - [License](#license)
@@ -187,6 +188,33 @@ Results on one NVIDIA A100-SXM4-80GB (October 2026, torch 2.14.1+cu126), trainin
 Our training scripts therefore run 4 models at once on each GPU. Four gets nearly all of the gain. Eight adds at most 8% more throughput but doubles the time each model takes, so each result arrives later; Optuna picks each new trial from the finished ones, so earlier results matter more than a few percent of throughput.
 
 A training step also takes about as long at batch size 2 as at 32 (about 3.3 ms for this model), so an epoch at batch size 2 takes about 16 times longer.
+
+## Tuning
+
+`scripts/tune.py` tunes the VNN's hyperparameters with [Optuna](https://optuna.org/), separately for each formula. A trial trains one set of hyperparameters on each of the 10 tuning datasets, with the covariance estimated from that dataset's `train.csv`, and its score is the mean validation MSE. Training uses Adam on MSE and stops after 25 epochs without a lower validation loss, or at 1,500 epochs, and keeps the weights of the best epoch. Every layer uses PReLU.
+
+| Hyperparameter | Range |
+|---|---|
+| Learning rate | 1e-4 to 1e-1, log scale |
+| Batch size | 2, 4, 8, 16, 32, 64, 128, or 256 |
+| Layers | 1 to 4 |
+| Channels per layer | 1 to 256 |
+| Filter taps per layer | 1 to 12 |
+
+On the DGX, `sbatch scripts/tune.sbatch` starts 8 copies of the script, one A100 each: copies 0–3 tune the linear formula and 4–7 the interaction formula. Each copy trains 4 models at a time (see [GPU benchmark](#gpu-benchmark)). When one finishes, it starts the next dataset of a trial it is running, or else asks Optuna for a new trial. The copies of a formula share one Optuna study and stop when it has 200 trials. To resume a stopped run, submit the job again; each copy marks only its own unfinished trials as failed.
+
+It writes to `results/` (gitignored):
+
+- `results/tuning/<formula>.log`: the Optuna study, as an Optuna journal file, which several machines can share safely. It holds each trial's hyperparameters and score, and for each finished trial, every dataset's validation MSE, epochs, and training time. Open it with `optuna.load_study` and `JournalStorage`.
+- `results/tuning/nodes/<formula>_<copy>_<job>.json`: each copy's run time and how many trainings it finished.
+- `results/tuning/summary.json`, per formula:
+  - **wall hours**, from the first trial's start to the last trial's end, including any wait between a stopped job and its resubmission;
+  - **GPU hours**, the total time the copies held a GPU;
+  - **training hours**, the total time of all trainings. With 4 trainings per GPU, one GPU hour holds up to 4 training hours;
+  - the median and longest training time, the median number of epochs, the number of finished and diverged trials, and the best trial.
+- `tune-<job>_<copy>.out` in the clone: a line for every finished training and trial.
+
+From the benchmark, tuning should take roughly 3 to 36 hours, depending mostly on which batch sizes Optuna favors; it has not been measured yet.
 
 ## Contributors
 
