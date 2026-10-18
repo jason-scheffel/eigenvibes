@@ -11,6 +11,7 @@ Course project for CSI 436/536 (Fall 2026, University at Albany).
 
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [GPU benchmark](#gpu-benchmark)
 - [Use of generative AI](#use-of-generative-ai)
 - [License](#license)
 
@@ -32,6 +33,24 @@ uv sync --extra cpu     # no GPU, macOS, or an AMD GPU on Windows
 Plain `uv sync` and `uv remove` uninstall PyTorch. Run your command again after either one.
 
 Run scripts with `uv run python <script>`.
+
+## GPU benchmark
+
+`scripts/benchmark.py` measures how fast VNNs train on a GPU and whether training several at the same time on one GPU gets more done than training them one after another. It only prints its results. On the DGX, run it with `sbatch scripts/benchmark.sbatch`.
+
+Results on one NVIDIA A100-SXM4-80GB (October 2026, torch 2.14.1+cu126), training copies of a 3-layer VNN with 128 channels and 8 filter taps per layer on 2,000 rows. Each value is the total epochs per second of all models together, relative to one model alone:
+
+| Models at once | Batch 2 | Batch 8 | Batch 32 |
+|---:|---:|---:|---:|
+| 1 | 1.00x | 1.00x | 1.00x |
+| 2 | 2.04x | 2.12x | 1.98x |
+| 4 | 3.84x | 3.77x | 3.75x |
+| 8 | 4.03x | 4.08x | 3.89x |
+| 16 | 4.04x | 4.10x | 3.89x |
+
+Our training scripts therefore run 4 models at once on each GPU. Four gets nearly all of the gain. Eight adds at most 8% more throughput but doubles the time each model takes, so each result arrives later; Optuna picks each new trial from the finished ones, so earlier results matter more than a few percent of throughput.
+
+A training step also takes about as long at batch size 2 as at 32 (about 3.3 ms for this model), so an epoch at batch size 2 takes about 16 times longer.
 
 ## Use of generative AI
 
