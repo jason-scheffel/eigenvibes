@@ -1,2 +1,4 @@
 reviews:
   profile: assertive
+  auto_review:
+    auto_incremental_review: false
