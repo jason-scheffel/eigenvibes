@@ -199,8 +199,18 @@ def tune(
                 return number, waiting.pop(0)
         if _taken(study, len(study.trials)) >= TRIALS:
             return None
-        new: optuna.Trial = study.ask()
-        new.set_user_attr("copy", copy)
+        # A stop between these two writes would leave a running trial that no
+        # copy owns, so no restart would ever fail it. Hold SIGTERM until both
+        # are done; Windows can't hold signals, but Slurm doesn't run there.
+        holding: bool = hasattr(signal, "pthread_sigmask")
+        if holding:
+            signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+        try:
+            new: optuna.Trial = study.ask()
+            new.set_user_attr("copy", copy)
+        finally:
+            if holding:
+                signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTERM})
         # Another copy may have asked at the same moment; the lower number wins.
         taken: int = _taken(study, new.number)
         if taken >= TRIALS:
