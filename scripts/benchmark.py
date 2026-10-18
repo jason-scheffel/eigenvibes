@@ -138,7 +138,9 @@ def measure(
     barrier: Barrier = context.Barrier(models_at_once)
     seconds: multiprocessing.queues.Queue[float] = context.Queue()
     workers: list[multiprocessing.context.SpawnProcess] = [
-        context.Process(target=train, args=(model_name, batch_size, barrier, seconds))
+        context.Process(
+            target=train, args=(model_name, batch_size, barrier, seconds), daemon=True
+        )
         for _ in range(models_at_once)
     ]
     worker: multiprocessing.context.SpawnProcess
