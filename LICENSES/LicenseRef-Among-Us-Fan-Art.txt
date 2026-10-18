@@ -1,9 +1,12 @@
 Among Us Fan Art Notice
 
-docs/crewmates.svg is fan art of Among Us, drawn by Jason Scheffel. Among Us
-and its characters are the property of Innersloth LLC.
+docs/crewmates.svg and docs/contributors.svg are fan art of Among Us. Among Us
+and its characters are the property of Innersloth LLC. docs/crewmates.svg was
+drawn by Jason Scheffel. docs/contributors.svg is drawn by
+scripts/contributors.py and contains each contributor's GitHub avatar. The
+avatars belong to their owners.
 
-No license is granted for docs/crewmates.svg. It is shared for non-commercial
+No license is granted for these files. They are shared for non-commercial
 purposes in line with Innersloth's Fan Creation Policy, which does not grant a
 license: https://www.innersloth.com/fan-creation-policy/
 

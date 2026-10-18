@@ -43,6 +43,7 @@ We compare:
 - [Installation](#installation)
 - [Datasets](#datasets)
 - [GPU benchmark](#gpu-benchmark)
+- [Contributors](#contributors)
 - [Use of generative AI](#use-of-generative-ai)
 - [License](#license)
 - [References](#references)
@@ -187,6 +188,12 @@ Our training scripts therefore run 4 models at once on each GPU. Four gets nearl
 
 A training step also takes about as long at batch size 2 as at 32 (about 3.3 ms for this model), so an epoch at batch size 2 takes about 16 times longer.
 
+## Contributors
+
+<p align="center"><a href="https://github.com/jason-scheffel/eigenvibes/graphs/contributors"><img src="docs/contributors.svg" alt="One crewmate per contributor, each with their GitHub avatar in the visor and their username below"></a></p>
+
+`uv run python scripts/contributors.py` redraws this image from the repository's contributor list on GitHub. Run it after someone's first pull request is merged, once GitHub's [contributors page](https://github.com/jason-scheffel/eigenvibes/graphs/contributors) shows them; GitHub can take a few hours to update the list.
+
 ## Use of generative AI
 
 This project uses generative AI tools (see section 4.8 of the [course syllabus](https://chong-l.github.io/CSI436_536_26F.html)):
@@ -225,7 +232,7 @@ Some findings and bugs were found by AI tools rather than by us. We checked each
 
 The code is licensed under the BSD 3-Clause License. See [LICENSE](LICENSE) for the full text. Documentation and other prose, including this README, is under [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt). Config files and the generated data in `data/` are under [CC0 1.0](LICENSES/CC0-1.0.txt).
 
-The crewmate drawing in `docs/crewmates.svg` is fan art and is not under any of these licenses. This project is not affiliated with Among Us or Innersloth LLC; see [the fan art notice](LICENSES/LicenseRef-Among-Us-Fan-Art.txt) for details.
+The crewmate drawings in `docs/crewmates.svg` and `docs/contributors.svg` are fan art and are not under any of these licenses. This project is not affiliated with Among Us or Innersloth LLC; see [the fan art notice](LICENSES/LicenseRef-Among-Us-Fan-Art.txt) for details.
 
 ## References
 
