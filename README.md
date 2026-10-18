@@ -5,6 +5,14 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # eigenvibes
 
+[![CI](https://github.com/jason-scheffel/eigenvibes/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jason-scheffel/eigenvibes/actions/workflows/ci.yml)
+[![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
+[![Python version](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fjason-scheffel%2Feigenvibes%2Fmaster%2Fpyproject.toml)](pyproject.toml)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![REUSE status](https://api.reuse.software/badge/github.com/jason-scheffel/eigenvibes)](https://api.reuse.software/info/github.com/jason-scheffel/eigenvibes)
+
 Course project for CSI 436/536 (Fall 2026, University at Albany).
 
 This project checks whether explanations of neural networks give the right answer. To know the right answer, it uses synthetic data.
