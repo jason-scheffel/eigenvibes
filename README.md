@@ -207,11 +207,19 @@ We read every line before it is merged and stand by all of it. We further verify
 
 Some findings and bugs were found by AI tools rather than by us. We checked each one before relying on it:
 
-- On ROCm, GPU matrix products with more than 524,288 rows return wrong values without an error.
-- A covariance matrix that carries gradients leaks them back into the data it was computed from, so the VNN detaches it.
-- Averaging the VNN's last layer over channels rounds differently depending on memory layout, so matching the earlier implementation exactly needs a contiguous copy.
-- Reproducing the earlier implementation's seeded initialization requires one extra set of random draws that it made and discarded.
-- Tiny rounding differences in a model's output depend on the batch size, so batch sizes must stay fixed for results to reproduce exactly.
+| Finding | Found by |
+| --- | --- |
+| On ROCm, GPU matrix products with more than 524,288 rows return wrong values without an error. | Claude Opus 5.5 |
+| A covariance matrix that carries gradients leaks them back into the data it was computed from, so the VNN detaches it. | Claude Opus 5.5 |
+| Averaging the VNN's last layer over channels rounds differently depending on memory layout, so matching the earlier implementation exactly needs a contiguous copy. | Claude Opus 5.5 |
+| Reproducing the earlier implementation's seeded initialization requires one extra set of random draws that it made and discarded. | Claude Opus 5.5 |
+| Tiny rounding differences in a model's output depend on the batch size, so batch sizes must stay fixed for results to reproduce exactly. | Claude Opus 5.5 |
+| The CI workflow referred to GitHub Actions by release tags, which can be moved to point at different code, and kept the job's token in `.git/config` after checkout. | CodeRabbit |
+| The covariance check accepted matrices containing NaN, because comparisons with NaN are false, so the eigendecomposition later failed with a misleading error. | CodeRabbit |
+| Prediction split its input into chunks of 524,288 divided by the number of nodes, which is 0 for graphs with more nodes than that and makes the split fail. | CodeRabbit |
+| If a benchmark worker failed to start, the workers already running waited forever, and Python hung on exit. | CodeRabbit |
+| The cu126 build needs NVIDIA driver 525.60.13 on Linux and 528.33 on Windows, not any 525 release. | CodeRabbit |
+| A test required an exact zero from values recomputed after a round trip through CSV, which can fail from last-digit rounding on another platform. | CodeRabbit |
 
 ## License
 
