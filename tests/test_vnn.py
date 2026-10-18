@@ -123,7 +123,9 @@ def test_regional_residuals() -> None:
     differently from the mean of the regional output, and the normalized
     residual must divide each sample's residual by its own norm. A residual
     that is exactly zero, here from zero biases and a zero input, has no
-    direction and must raise.
+    direction and must raise. So must a residual that is zero only up to
+    rounding, here from a one-channel model whose regional outputs are all
+    equal but round differently from its prediction.
     """
     torch.manual_seed(42)
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -154,6 +156,17 @@ def test_regional_residuals() -> None:
             bias.zero_()
     with pytest.raises(ValueError, match="zero"):
         model.regional(torch.zeros_like(x), kind="normalized_residual")
+    torch.manual_seed(42)
+    constant: VNN = VNN(
+        torch.eye(12, dtype=torch.float64),
+        widths=[1],
+        taps=[1],
+        activation=torch.nn.Identity,
+    )
+    zeros: torch.Tensor = torch.zeros(1, 12, dtype=torch.float64)
+    assert constant.regional(zeros, kind="residual").norm() > 0
+    with pytest.raises(ValueError, match="zero"):
+        constant.regional(zeros, kind="normalized_residual")
 
 
 @pytest.mark.skipif(

@@ -224,6 +224,7 @@ Some findings and bugs were found by AI tools rather than by us. We checked each
 | The CI workflow referred to GitHub Actions by release tags, which can be moved to point at different code, and kept the job's token in `.git/config` after checkout. | CodeRabbit |
 | The covariance check accepted matrices containing NaN, because comparisons with NaN are false, so the eigendecomposition later failed with a misleading error. | CodeRabbit |
 | Prediction split its input into chunks of 524,288 divided by the number of nodes, which is 0 for graphs with more nodes than that and makes the split fail. | CodeRabbit |
+| The VNN's prediction and its regional outputs round differently, so a regional residual that should be zero came out around 1e-16 and was normalized into a full-length direction instead of raising an error. | GPT-6 Astra |
 | If a benchmark worker failed to start, the workers already running waited forever, and Python hung on exit. | CodeRabbit |
 | The cu126 build needs NVIDIA driver 525.60.13 on Linux and 528.33 on Windows, not any 525 release. | CodeRabbit |
 | A test required an exact zero from values recomputed after a round trip through CSV, which can fail from last-digit rounding on another platform. | CodeRabbit |
