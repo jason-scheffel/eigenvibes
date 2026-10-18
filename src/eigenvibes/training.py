@@ -36,6 +36,7 @@ BATCH_SIZES: tuple[int, ...] = (2, 4, 8, 16, 32, 64, 128, 256)
 MAX_LAYERS: int = 4
 MAX_WIDTH: int = 256
 MAX_TAPS: int = 12
+PREDICT_BATCH: int = 512
 
 
 @dataclass(frozen=True)
@@ -156,8 +157,9 @@ def predict(model: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
     """Predict without gradients, in fixed-size chunks.
 
     A VNN gets chunks of ``model.max_batch`` samples, which keeps every call
-    within the ROCm row limit and makes the result independent of how many
-    samples ``x`` holds; other models get all of ``x`` at once.
+    within the ROCm row limit; other models get chunks of ``PREDICT_BATCH``.
+    A fixed chunk size makes the result independent of how many samples ``x``
+    holds.
 
     Parameters
     ----------
@@ -171,7 +173,7 @@ def predict(model: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
     torch.Tensor
         Predictions, shape ``(n,)``.
     """
-    chunk: int = model.max_batch if isinstance(model, VNN) else len(x)
+    chunk: int = model.max_batch if isinstance(model, VNN) else PREDICT_BATCH
     with torch.no_grad():
         return torch.cat([model(part) for part in torch.split(x, chunk)])
 
