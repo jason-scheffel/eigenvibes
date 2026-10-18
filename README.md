@@ -7,6 +7,26 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 Course project for CSI 436/536 (Fall 2026, University at Albany).
 
+This project checks whether explanations of neural networks give the right answer. To know the right answer, it uses synthetic data.
+
+The data describe fictional Among Us players. Each player has 12 behavior numbers, such as time spent near vents or time spent alone, and a formula we chose turns them into a **sus score**: how suspicious the player looks. Neural networks learn to predict sus from the 12 numbers. Then we follow a group of players for four rounds. Impostors' sus rises every round, and crewmates' sus stays flat.
+
+We ask each trained network *why* impostors' sus rises, and compare its answer with the truth. The answer is one amount per behavior, and the amounts add up to the rise: for example, 0.3 of the rise came from `vent_lingering`, 0.2 from `time_alone`, and so on. It is computed in two steps:
+
+1. Integrated Gradients [1] explains each single prediction: it splits the predicted sus into how much each behavior contributed.
+2. A mixed model (a regression for repeated measurements of the same players) combines those per-prediction amounts into amounts for the difference between the impostors' rise and the crewmates' rise.
+
+In [2], this method explained a VNN's brain-age predictions for two groups of patients. On real data, however, nobody knows the true amounts, so there is no way to check whether they are right. Here we wrote the formula, so we know the true amounts exactly.
+
+We compare:
+
+- **Networks.** A VNN (coVariance Neural Network [3]) uses the covariance matrix of the 12 behaviors as a graph that links behaviors that vary together, and each layer mixes every behavior with the behaviors it is linked to. One VNN is given the true covariance, and another estimates it from its training data. An MLP, a standard fully connected network, has no such built-in structure.
+- **Behaviors or patterns.** Behaviors that change together form **patterns**, the eigenvectors of the covariance matrix. Each explanation can be given per behavior or per pattern. VNNs work in terms of patterns, so we check both.
+- **Two formulas for sus.** One adds up its parts; the other also multiplies two of them.
+- **Harder cases.** Fewer players, players who miss rounds, a decoy behavior that rises for impostors but has no effect on sus, and a version where sus does not rise at all.
+
+[Datasets](#datasets) describes the data in detail.
+
 ## Contents
 
 - [Requirements](#requirements)
@@ -37,12 +57,6 @@ Plain `uv sync` and `uv remove` uninstall PyTorch. Run your command again after 
 Run scripts with `uv run python <script>`.
 
 ## Datasets
-
-The data is synthetic. Each row describes a fictional Among Us player with 12 behavior numbers, and a formula we chose turns those numbers into a **sus score**; that is, how suspicious the player looks. Models learn to predict sus from the 12 numbers.
-
-**Explaining** a prediction means splitting it into how much each input contributed. For example, a model predicts sus 2.0 for a player, and the explanation says 1.2 of that came from `vent_lingering`, 0.5 from `time_alone`, and so on, with the amounts adding up to the prediction (measured from a typical player, whose 12 numbers are all 0). We use Integrated Gradients [1], a standard method for this split. The same split also works for patterns, groups of behaviors that change together, instead of single behaviors.
-
-That explains one prediction for one player. This project explains a difference between groups instead: impostors' sus rises over four rounds while crewmates' stays flat, and we split the difference between the two groups' rises into amounts per behavior or per pattern. In [2], this split was done for a VNN's brain-age predictions, comparing two groups of patients, by combining Integrated Gradients with a mixed model (a regression for repeated measurements of the same people). On real data, however, nobody knows the true amounts, so there is no way to check whether the split is right. Here we wrote the formula, so we know the true amounts exactly, and we check whether the explanations of VNNs and an MLP find them.
 
 `uv run python scripts/make_datasets.py` writes every dataset to `data/` (gitignored). It takes a few seconds. Then it compares each file's SHA-256 hash with `data/SHA256SUMS`, which is in git and lists the hashes of our files. If any file differs, it prints a warning and carries on; the data are still valid, just not bit-for-bit identical to ours (for example, on a different CPU or library version). `cd data && sha256sum -c SHA256SUMS` runs the same check.
 
@@ -198,3 +212,5 @@ The code is licensed under the BSD 3-Clause License. See [LICENSE](LICENSE) for 
 [1] M. Sundararajan, A. Taly, and Q. Yan, "Axiomatic Attribution for Deep Networks," in *Proc. 34th International Conference on Machine Learning (ICML)*, 2017. https://arxiv.org/abs/1703.01365
 
 [2] J. Scheffel and S. Sihag, "Covariance Eigenspace Provides Latent Attribution of Longitudinal Effects in Brain Age Gap," arXiv:2609.40202, 2026. https://arxiv.org/abs/2609.40202
+
+[3] S. Sihag, G. Mateos, C. McMillan, and A. Ribeiro, "coVariance Neural Networks," in *Advances in Neural Information Processing Systems (NeurIPS)*, 2022. https://arxiv.org/abs/2205.15856
