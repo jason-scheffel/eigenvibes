@@ -9,3 +9,8 @@ SPDX-License-Identifier = "CC0-1.0"
 path = "data/**"
 SPDX-FileCopyrightText = "2026 Jason Scheffel <contact@jasonscheffel.com>"
 SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "docs/crewmates.svg"
+SPDX-FileCopyrightText = ["2026 Jason Scheffel <contact@jasonscheffel.com>", "Innersloth LLC"]
+SPDX-License-Identifier = "LicenseRef-Among-Us-Fan-Art"
