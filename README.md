@@ -44,6 +44,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 - [Datasets](#datasets)
 - [GPU benchmark](#gpu-benchmark)
 - [Tuning](#tuning)
+- [Final training](#final-training)
 - [Contributors](#contributors)
 - [Use of generative AI](#use-of-generative-ai)
 - [License](#license)
@@ -218,6 +219,26 @@ It writes to `results/` (gitignored):
 - `tune-<job>_<copy>.out` in the clone: a line for every finished training and trial.
 
 From the benchmark, tuning should take roughly 3 to 36 hours, depending mostly on which batch sizes Optuna favors; it has not been measured yet.
+
+## Final training
+
+After tuning, `scripts/train_final.py` trains the final VNNs on the 30 evaluation datasets with the best trial's hyperparameters for each formula. It refuses to start until both studies have 200 finished trials. Each formula gets two kinds of VNN:
+
+- **true covariance**: the VNN uses `data/covariance.csv`, the covariance the behaviors were drawn from, for training and predicting;
+- **estimated covariance**: the VNN uses the covariance of its dataset's `train.csv`, as in tuning.
+
+Each kind is trained on each evaluation dataset with seeds 0, 1, and 2, which gives 2 formulas × 2 kinds × 30 datasets × 3 seeds = 360 models. A model trains as in tuning and stops early on its own `validation.csv`. It is then scored on `test.csv`, whose `sus` has no noise, by the RMSE and R² of its predictions.
+
+On the DGX, `sbatch scripts/train_final.sbatch` starts 8 copies of the script, one A100 each. Each copy trains a fixed 45 of the 360 models, 4 at a time. A copy skips models that are already saved, so submitting the job again resumes a stopped run.
+
+It writes to `results/final/` (gitignored):
+
+- `<formula>/<covariance>/<dataset>_seed_<seed>.pt`: the trained model, which `torch.load` reads. It holds the `state_dict`, the covariance matrix the model was built with (as `covariance_matrix`, since the VNN's `state_dict` does not include it), the hyperparameters and tuning trial, and the scores below. `training.build` with that matrix, the hyperparameters, and the seed, followed by `load_state_dict`, restores the model.
+- `<formula>/<covariance>/<dataset>_seed_<seed>.json`: the same values without the weights: validation MSE, best epoch, epochs, test RMSE and R², whether training diverged, and the training time.
+- `metrics.csv`: one row per model with those values.
+- `nodes/<copy>_<job>.json`: each copy's run time and how many models it trained.
+- `summary.json`: GPU hours and training hours (as in [Tuning](#tuning)), and per formula, the tuning trial and hyperparameters, and per kind of covariance, the number of models, how many diverged, and the mean and standard deviation of the test RMSE and R².
+- `final-<job>_<copy>.out` in the clone: a line for every finished model.
 
 ## Contributors
 
