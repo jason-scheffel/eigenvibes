@@ -4,3 +4,8 @@ version = 1
 path = [".gitignore", ".gitattributes", ".editorconfig", ".python-version", "pyproject.toml", "uv.lock", ".pre-commit-config.yaml", ".github/workflows/ci.yml", "CLAUDE.md", ".coderabbit.yaml"]
 SPDX-FileCopyrightText = "2026 Jason Scheffel <contact@jasonscheffel.com>"
 SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "data/**"
+SPDX-FileCopyrightText = "2026 Jason Scheffel <contact@jasonscheffel.com>"
+SPDX-License-Identifier = "CC0-1.0"
