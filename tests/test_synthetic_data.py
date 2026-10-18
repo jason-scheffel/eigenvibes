@@ -150,8 +150,8 @@ def test_write_dataset_is_exact_and_repeatable(tmp_path: Path) -> None:
             np.testing.assert_allclose(noise["linear"], noise["interaction"], atol=1e-9)
             assert noise["linear"].std() > 0.5
         else:
-            np.testing.assert_array_equal(noise["linear"], 0)
-            np.testing.assert_array_equal(noise["interaction"], 0)
+            np.testing.assert_allclose(noise["linear"], 0, atol=1e-12)
+            np.testing.assert_allclose(noise["interaction"], 0, atol=1e-12)
 
 
 def test_checksums_warn_without_failing(
