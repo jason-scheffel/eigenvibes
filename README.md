@@ -24,7 +24,7 @@ Clone the repository, then run one of these commands from its root, depending on
 
 ```
 uv sync --extra cu130   # NVIDIA GPU on Linux or Windows (driver 580 or newer)
-uv sync --extra cu126   # NVIDIA GPU with driver 525 to 579; no RTX 50-series
+uv sync --extra cu126   # NVIDIA GPU with driver 525.60.13 or newer (Windows: 528.33) but older than 580; no RTX 50-series
 uv sync --extra rocm    # AMD GPU on Linux
 uv sync --extra cpu     # no GPU, macOS, or an AMD GPU on Windows
 ```
