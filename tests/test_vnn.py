@@ -157,13 +157,15 @@ def test_regional_residuals() -> None:
             bias.zero_()
     with pytest.raises(ValueError, match="zero"):
         model.regional(torch.zeros_like(x), kind="normalized_residual")
-    torch.manual_seed(42)
     constant: VNN = VNN(
         torch.eye(12, dtype=torch.float64),
         widths=[1],
         taps=[1],
         activation=torch.nn.Identity,
     )
+    with torch.no_grad():
+        constant.weights[0].fill_(1.0)
+        constant.biases[0].fill_(1.0)
     tiny: torch.Tensor = torch.zeros(1, 12, dtype=torch.float64)
     tiny[0, 0] = 1e-15
     assert constant.regional(tiny, kind="residual").norm() > 0
