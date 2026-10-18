@@ -17,5 +17,5 @@ export UV_CACHE_DIR="$SLURM_SUBMIT_DIR/.uv/cache"
 export UV_PYTHON_INSTALL_DIR="$SLURM_SUBMIT_DIR/.uv/python"
 cd "$SLURM_SUBMIT_DIR"
 nvidia-smi
-uv sync --locked --extra cu130
+uv sync --locked --extra cu126
 uv run python scripts/benchmark.py
