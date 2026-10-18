@@ -381,7 +381,10 @@ class VNN(torch.nn.Module):
         ValueError
             If ``kind`` is not one of the three values, or if ``kind`` is
             ``"normalized_residual"`` and a sample's residual has a norm that
-            is exactly zero or not finite (infinite or NaN). Also if PyTorch is
+            is not finite (infinite or NaN) or at most the worst-case rounding
+            error of the residual, ``eps F_L (N + 1) sqrt(N) max|y|``. Such a
+            residual is zero up to rounding, and normalizing it would turn
+            rounding error into a unit-length direction. Also if PyTorch is
             a ROCm build, ``x`` is on the GPU, and ``B`` exceeds `max_batch`;
             see the class Notes.
         """
@@ -396,10 +399,21 @@ class VNN(torch.nn.Module):
             return residual
         if kind == "normalized_residual":
             norm: torch.Tensor = residual.norm(dim=1, keepdim=True)
-            if (~torch.isfinite(norm) | (norm == 0)).any():
+            # Worst-case rounding of the sums behind each residual entry: F_L N
+            # terms in the prediction and F_L in p, over N entries.
+            channels: int = last_layer.shape[1]
+            nodes: int = last_layer.shape[2]
+            rounding: torch.Tensor = (
+                torch.finfo(torch.float64).eps
+                * channels
+                * (nodes + 1)
+                * nodes**0.5
+                * last_layer.abs().amax(dim=(1, 2)).unsqueeze(1)
+            )
+            if (~torch.isfinite(norm) | (norm <= rounding)).any():
                 raise ValueError(
-                    "a regional residual has a zero or non-finite norm; "
-                    "it has no direction"
+                    "a regional residual is zero up to rounding or has a "
+                    "non-finite norm; it has no direction"
                 )
             return residual / norm
         raise ValueError(f"unknown kind {kind!r}")
