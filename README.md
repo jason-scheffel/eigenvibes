@@ -70,7 +70,7 @@ Run scripts with `uv run python <script>`.
 
 ## Datasets
 
-`uv run python scripts/make_datasets.py` writes every dataset to `data/` (gitignored). It takes a few seconds. Then it compares each file's SHA-256 hash with `data/SHA256SUMS`, which is in git and lists the hashes of our files. If any file differs, it prints a warning and carries on; the data are still valid, just not bit-for-bit identical to ours (for example, on a different CPU or library version). `cd data && sha256sum -c SHA256SUMS` runs the same check.
+`uv run python scripts/make_datasets.py` writes every dataset to `data/` (gitignored). It takes a few seconds. Then it compares each file's SHA-256 hash with `data/SHA256SUMS`, which is in git and lists the hashes of our files (generated on the DGX). If any file differs, it prints a warning and carries on; the data are still valid, just not bit-for-bit identical to ours (for example, on a different CPU or library version). `cd data && sha256sum -c SHA256SUMS` runs the same check.
 
 ### Files
 
