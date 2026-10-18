@@ -1,13 +1,16 @@
 # SPDX-FileCopyrightText: 2026 Jason Scheffel <contact@jasonscheffel.com>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for VNN training and hyperparameter search."""
+"""Tests for loading data and training models."""
 
-import optuna
+from pathlib import Path
+
+import pandas as pd
 import pytest
 import torch
 
 from eigenvibes import training
+from eigenvibes.synthetic_data import FEATURES
 from eigenvibes.training import Hyperparameters
 from eigenvibes.vnn import VNN
 
@@ -35,77 +38,30 @@ def _data(n: int) -> tuple[torch.Tensor, torch.Tensor]:
     return x, y
 
 
-def _interrupt(trial: optuna.Trial) -> float:
-    """Stand in for an objective that the user stops with Ctrl-C.
+def test_load_selects_behaviors_by_name(tmp_path: Path) -> None:
+    """Behaviors come back in `FEATURES` order whatever the column order.
 
     Parameters
     ----------
-    trial : optuna.Trial
-        The trial being run.
-
-    Returns
-    -------
-    float
-        Never returns.
-
-    Raises
-    ------
-    KeyboardInterrupt
-        Always, after a hyperparameter has been drawn.
+    tmp_path : pathlib.Path
+        Temporary directory from pytest.
     """
-    trial.suggest_float("lr", *training.LEARNING_RATES, log=True)
-    raise KeyboardInterrupt
-
-
-def test_resumed_search_matches_uninterrupted_search(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Check that stopping and resuming a search changes none of its trials.
-
-    One study runs 12 trials at once. Another runs 6, then has one trial left
-    running, as a killed process leaves it, and one failed by Ctrl-C. It is
-    then loaded again from its storage with a fresh `optuna.Study` object and
-    resumed to 12 finished trials. The finished trials must have the same
-    hyperparameters and bitwise the same values as the uninterrupted ones.
-    Twelve trials go past the 10 random start-up trials of `TPESampler`, so
-    the last trials come from the fitted density model, which depends on the
-    earlier trials. The search space and training are shrunk to keep the test
-    fast.
-    """
-    monkeypatch.setattr(training, "FOLDS", 3)
-    monkeypatch.setattr(training, "MAX_EPOCHS", 4)
-    monkeypatch.setattr(training, "PATIENCE", 2)
-    monkeypatch.setattr(training, "MAX_WIDTH", 4)
-    monkeypatch.setattr(training, "MAX_TAPS", 3)
-    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    expected: torch.Tensor = torch.arange(24, dtype=torch.float64).reshape(2, 12) / 7
+    frame: pd.DataFrame = pd.DataFrame(expected.numpy(), columns=list(FEATURES))
+    frame["sus"] = [0.1, 0.2]
+    frame["player"] = [5, 6]
+    folder: Path = tmp_path / "linear" / "tuning_30"
+    folder.mkdir(parents=True)
+    frame[["sus", "player", *reversed(FEATURES)]].to_csv(
+        folder / "train.csv", index=False
+    )
     x: torch.Tensor
     y: torch.Tensor
-    x, y = _data(30)
-
-    uninterrupted: optuna.Study = optuna.create_study()
-    training.search(uninterrupted, x, y, n_trials=12, seed=42)
-
-    storage: optuna.storages.InMemoryStorage = optuna.storages.InMemoryStorage()
-    stopped: optuna.Study = optuna.create_study(storage=storage, study_name="resumed")
-    training.search(stopped, x, y, n_trials=6, seed=42)
-    stopped.ask()
-    with pytest.raises(KeyboardInterrupt):
-        stopped.optimize(_interrupt, n_trials=1)
-    resumed: optuna.Study = optuna.load_study(study_name="resumed", storage=storage)
-    training.search(resumed, x, y, n_trials=12, seed=42)
-
-    finished: list[list[optuna.trial.FrozenTrial]] = [
-        [
-            trial
-            for trial in study.trials
-            if trial.state == optuna.trial.TrialState.COMPLETE
-            or trial.user_attrs.get("diverged", False)
-        ]
-        for study in (resumed, uninterrupted)
-    ]
-    assert len(finished[0]) == 12
-    assert [t.params for t in finished[0]] == [t.params for t in finished[1]]
-    assert [t.value for t in finished[0]] == [t.value for t in finished[1]]
+    x, y = training.load("linear", "tuning_30", "train", root=tmp_path)
+    torch.testing.assert_close(x, expected, rtol=0, atol=0)
+    torch.testing.assert_close(
+        y, torch.tensor([0.1, 0.2], dtype=torch.float64), rtol=0, atol=0
+    )
 
 
 def test_early_stopping_restores_best_epoch(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -121,20 +77,46 @@ def test_early_stopping_restores_best_epoch(monkeypatch: pytest.MonkeyPatch) -> 
     x: torch.Tensor
     y: torch.Tensor
     x, y = _data(40)
+    covariance: torch.Tensor = torch.cov(x[:30].T)
     hyperparameters: Hyperparameters = Hyperparameters(
         lr=0.1, batch_size=4, widths=(8, 4), taps=(3, 2)
     )
-    model: VNN = training.build(x[:30], hyperparameters, seed=0)
-    best_epoch: int = training.train_early_stopping(
-        model, x[:30], y[:30], x[30:], y[30:], hyperparameters, seed=1
+    model: VNN = training.build(covariance, hyperparameters, seed=0)
+    validation_mse: float
+    best_epoch: int
+    epochs: int
+    validation_mse, best_epoch, epochs = training.train(
+        model, x[:30], y[:30], x[30:], y[30:], lr=0.1, batch_size=4, seed=1
     )
-    assert best_epoch < 60 - 5
+    assert epochs == best_epoch + 5 < 60
+    assert (
+        validation_mse
+        == torch.nn.functional.mse_loss(training.predict(model, x[30:]), y[30:]).item()
+    )
 
-    replay: VNN = training.build(x[:30], hyperparameters, seed=0)
+    replay: VNN = training.build(covariance, hyperparameters, seed=0)
     optimizer: torch.optim.Adam = torch.optim.Adam(replay.parameters(), lr=0.1)
     generator: torch.Generator = torch.Generator().manual_seed(1)
     for _ in range(best_epoch):
         training._train_epoch(replay, x[:30], y[:30], optimizer, 4, generator)
     name: str
+    value: torch.Tensor
     for name, value in replay.state_dict().items():
         torch.testing.assert_close(model.state_dict()[name], value, rtol=0, atol=0)
+
+
+def test_training_that_never_has_a_finite_loss_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A run whose validation loss is never finite raises instead of returning."""
+    monkeypatch.setattr(training, "PATIENCE", 2)
+    x: torch.Tensor
+    y: torch.Tensor
+    x, y = _data(20)
+    model: VNN = training.build(
+        torch.cov(x.T), Hyperparameters(0.01, 4, (2,), (1,)), seed=0
+    )
+    with pytest.raises(FloatingPointError):
+        training.train(
+            model, x, y, x, torch.full_like(y, torch.nan), lr=0.01, batch_size=4, seed=0
+        )
