@@ -192,7 +192,7 @@ A training step also takes about as long at batch size 2 as at 32 (about 3.3 ms 
 
 <p align="center"><a href="https://github.com/jason-scheffel/eigenvibes/graphs/contributors"><img src="docs/contributors.svg" alt="One crewmate per contributor, each with their GitHub avatar in the visor and their username below"></a></p>
 
-`uv run python scripts/contributors.py` redraws this image from the repository's contributor list on GitHub. Run it after someone's first pull request is merged.
+`uv run python scripts/contributors.py` redraws this image from the repository's contributor list on GitHub. Run it after someone's first pull request is merged, once GitHub's [contributors page](https://github.com/jason-scheffel/eigenvibes/graphs/contributors) shows them; GitHub can take a few hours to update the list.
 
 ## Use of generative AI
 
