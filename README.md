@@ -15,27 +15,27 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 <p align="center"><img src="docs/crewmates.svg" alt="Hand-drawn Among Us fan art: a red crewmate next to a fallen blue crewmate" width="400"></p>
 
-Course project for CSI 436/536 (Fall 2026, University at Albany).
-
-This project checks whether explanations of neural networks give the right answer. To know the right answer, it uses synthetic data.
-
-The data describe fictional Among Us players. Each player has 12 behavior numbers, such as time spent near vents or time spent alone, and a formula we chose turns them into a **sus score**: how suspicious the player looks. Neural networks learn to predict sus from the 12 numbers. Then we follow a group of players for four rounds. Impostors' sus rises every round, and crewmates' sus stays flat.
-
-We ask each trained network *why* impostors' sus rises, and compare its answer with the truth. The answer is one amount per behavior, and the amounts add up to the rise: for example, 0.3 of the rise came from `vent_lingering`, 0.2 from `time_alone`, and so on. It is computed in two steps:
-
-1. Integrated Gradients [1] explains each single prediction: it splits the predicted sus into how much each behavior contributed.
-2. A mixed model (a regression for repeated measurements of the same players) combines those per-prediction amounts into amounts for the difference between the impostors' rise and the crewmates' rise.
-
-In [2], this method explained a VNN's brain-age predictions for two groups of patients. On real data, however, nobody knows the true amounts, so there is no way to check whether they are right. Here we wrote the formula, so we know the true amounts exactly.
-
-We compare:
-
-- **Networks.** A VNN (coVariance Neural Network [3]) uses the covariance matrix of the 12 behaviors as a graph that links behaviors that vary together, and each layer mixes every behavior with the behaviors it is linked to. One VNN is given the true covariance, and another estimates it from its training data. An MLP, a standard fully connected network, has no such built-in structure.
-- **Behaviors or patterns.** Behaviors that change together form **patterns**, the eigenvectors of the covariance matrix. Each explanation can be given per behavior or per pattern. VNNs work in terms of patterns, so we check both.
-- **Two formulas for sus.** One adds up its parts; the other also multiplies two of them.
-- **Harder cases.** Fewer players, players who miss rounds, a decoy behavior that rises for impostors but has no effect on sus, and a version where sus does not rise at all.
-
-[Datasets](#datasets) describes the data in detail.
+> Course project for CSI 436/536 (Fall 2026, University at Albany).
+>
+> This project checks whether explanations of neural networks give the right answer. To know the right answer, it uses synthetic data.
+>
+> The data describe fictional Among Us players. Each player has 12 behavior numbers, such as time spent near vents or time spent alone, and a formula we chose turns them into a **sus score**: how suspicious the player looks. Neural networks learn to predict sus from the 12 numbers. Then we follow a group of players for four rounds. Impostors' sus rises every round, and crewmates' sus stays flat.
+>
+> We ask each trained network *why* impostors' sus rises, and compare its answer with the truth. The answer is one amount per behavior, and the amounts add up to the rise: for example, 0.3 of the rise came from `vent_lingering`, 0.2 from `time_alone`, and so on. It is computed in two steps:
+>
+> 1. Integrated Gradients [1] explains each single prediction: it splits the predicted sus into how much each behavior contributed.
+> 2. A mixed model (a regression for repeated measurements of the same players) combines those per-prediction amounts into amounts for the difference between the impostors' rise and the crewmates' rise.
+>
+> In [2], this method explained a VNN's brain-age predictions for two groups of patients. On real data, however, nobody knows the true amounts, so there is no way to check whether they are right. Here we wrote the formula, so we know the true amounts exactly.
+>
+> We compare:
+>
+> - **Networks.** A VNN (coVariance Neural Network [3]) uses the covariance matrix of the 12 behaviors as a graph that links behaviors that vary together, and each layer mixes every behavior with the behaviors it is linked to. One VNN is given the true covariance, and another estimates it from its training data. An MLP, a standard fully connected network, has no such built-in structure.
+> - **Behaviors or patterns.** Behaviors that change together form **patterns**, the eigenvectors of the covariance matrix. Each explanation can be given per behavior or per pattern. VNNs work in terms of patterns, so we check both.
+> - **Two formulas for sus.** One adds up its parts; the other also multiplies two of them.
+> - **Harder cases.** Fewer players, players who miss rounds, a decoy behavior that rises for impostors but has no effect on sus, and a version where sus does not rise at all.
+>
+> [Datasets](#datasets) describes the data in detail.
 
 ## Contents
 
