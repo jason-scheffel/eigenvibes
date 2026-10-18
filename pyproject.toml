@@ -18,6 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 cpu = ["torch>=2.14.0"]
+cu126 = ["torch>=2.14.0"]
 cu130 = ["torch>=2.14.0"]
 rocm = [
     "torch>=2.14.0",
@@ -41,9 +42,11 @@ dev = [
 ]
 
 [tool.uv]
+python-preference = "only-managed"
 conflicts = [
   [
     { extra = "cpu" },
+    { extra = "cu126" },
     { extra = "cu130" },
     { extra = "rocm" },
   ],
@@ -52,6 +55,7 @@ conflicts = [
 [tool.uv.sources]
 torch = [
   { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu126", extra = "cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
   { index = "pytorch-cu130", extra = "cu130", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
   { index = "pytorch-rocm", extra = "rocm", marker = "sys_platform == 'linux'" },
 ]
@@ -62,6 +66,11 @@ triton-rocm = [
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [[tool.uv.index]]

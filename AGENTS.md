@@ -11,7 +11,7 @@ Follow [CONTRIBUTING.md](CONTRIBUTING.md) for licensing, workflow, signing, and 
 
 Use `uv` for everything; do not use `pip` or create other virtual environments.
 
-- `uv sync --extra <cpu|cu130|rocm>`: install the project, PyTorch, and development tools; use the extra that matches the machine's GPU (see the README)
+- `uv sync --extra <cpu|cu126|cu130|rocm>`: install the project, PyTorch, and development tools; use the extra that matches the machine's GPU (see the README)
 - `uv add <package>` / `uv add --dev <package>`: add a dependency; commit `pyproject.toml` and `uv.lock` together
 - `uv run pre-commit run --all-files`: run ruff, mypy, and reuse
 - `uv run pytest`: run the tests
