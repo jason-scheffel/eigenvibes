@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Jason Scheffel <contact@jasonscheffel.com>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Train models on the synthetic datasets, and the VNN search space for Optuna.
+"""Train models on the synthetic datasets, and their search space for Optuna.
 
 A model trains with Adam on mean squared error, one step per batch of a fresh
 random order of the training rows each epoch, until the validation loss has
@@ -11,8 +11,8 @@ from the epoch with the lowest validation loss are then restored.
 The inputs are not centered: every behavior averages 0 by design, and
 Integrated Gradients explains predictions relative to the input 0. A VNN's
 covariance matrix is divided by its trace, whether it is the true covariance
-or one estimated from training data. All VNN activations are
-`torch.nn.PReLU`, one learned slope per layer.
+or one estimated from training data. Both the VNN and the MLP use
+`torch.nn.PReLU` activations, one learned slope per layer.
 
 For bit-for-bit reproducible results on a GPU, import ``eigenvibes`` and call
 ``torch.use_deterministic_algorithms(True)`` first.
@@ -31,8 +31,9 @@ from eigenvibes.vnn import VNN
 DATA: Path = Path(__file__).resolve().parents[2] / "data"
 MAX_EPOCHS: int = 1500
 PATIENCE: int = 25
-LEARNING_RATES: tuple[float, float] = (1e-4, 1e-1)
-BATCH_SIZES: tuple[int, ...] = (2, 4, 8, 16, 32, 64, 128, 256)
+MODELS: tuple[str, ...] = ("mlp", "vnn")
+LEARNING_RATES: tuple[float, float] = (1e-4, 1e-2)
+BATCH_SIZES: tuple[int, ...] = (16, 32, 64, 128)
 MAX_LAYERS: int = 4
 MAX_WIDTH: int = 256
 MAX_TAPS: int = 12
@@ -41,7 +42,7 @@ PREDICT_BATCH: int = 512
 
 @dataclass(frozen=True)
 class Hyperparameters:
-    """Hyperparameters of one VNN and its training.
+    """Hyperparameters of one VNN or MLP and its training.
 
     Attributes
     ----------
@@ -52,7 +53,7 @@ class Hyperparameters:
     widths : tuple[int, ...]
         Output channels of each layer.
     taps : tuple[int, ...]
-        Filter taps of each layer.
+        Filter taps of each layer; empty for an MLP.
     """
 
     lr: float
@@ -61,18 +62,20 @@ class Hyperparameters:
     taps: tuple[int, ...]
 
 
-def suggest(trial: optuna.trial.BaseTrial) -> Hyperparameters:
+def suggest(trial: optuna.trial.BaseTrial, model: str = "vnn") -> Hyperparameters:
     """Draw hyperparameters from the search space.
 
     The learning rate is log-uniform on ``LEARNING_RATES``, the batch size is
     one of ``BATCH_SIZES``, and the model has 1 to ``MAX_LAYERS`` layers, each
-    with 1 to ``MAX_WIDTH`` channels and 1 to ``MAX_TAPS`` taps.
+    with 1 to ``MAX_WIDTH`` channels and, for a VNN, 1 to ``MAX_TAPS`` taps.
 
     Parameters
     ----------
     trial : optuna.trial.BaseTrial
         A running trial, or a finished one such as ``study.best_trial``, for
         which this returns the hyperparameters it used.
+    model : str
+        ``"vnn"`` or ``"mlp"``.
 
     Returns
     -------
@@ -87,7 +90,8 @@ def suggest(trial: optuna.trial.BaseTrial) -> Hyperparameters:
     layer: int
     for layer in range(layers):
         widths.append(trial.suggest_int(f"width_{layer}", 1, MAX_WIDTH))
-        taps.append(trial.suggest_int(f"taps_{layer}", 1, MAX_TAPS))
+        if model == "vnn":
+            taps.append(trial.suggest_int(f"taps_{layer}", 1, MAX_TAPS))
     return Hyperparameters(lr, batch_size, tuple(widths), tuple(taps))
 
 
@@ -103,7 +107,7 @@ def load(
     dataset : str
         Folder name, such as ``"tuning_30"`` or ``"evaluation_07"``.
     split : str
-        ``"train"``, ``"validation"``, or ``"test"``.
+        ``"train"``, ``"validation"``, ``"test"``, or ``"cohort"``.
     root : pathlib.Path
         The folder written by ``scripts/make_datasets.py``.
 
@@ -116,7 +120,9 @@ def load(
         The ``sus`` column, float64, shape ``(n,)``, on the CPU.
     """
     frame: pd.DataFrame = pd.read_csv(
-        root / rule / dataset / f"{split}.csv", float_precision="round_trip"
+        root / rule / dataset / f"{split}.csv",
+        float_precision="round_trip",
+        encoding="utf-8",
     )
     x: torch.Tensor = torch.tensor(
         frame[list(FEATURES)].to_numpy(), dtype=torch.float64
@@ -153,6 +159,51 @@ def build(covariance: torch.Tensor, hyperparameters: Hyperparameters, seed: int)
     return model.to(covariance.device)
 
 
+def build_mlp(hyperparameters: Hyperparameters, seed: int) -> torch.nn.Sequential:
+    """Create an untrained MLP on the CPU: linear layers with PReLU between them.
+
+    Parameters
+    ----------
+    hyperparameters : Hyperparameters
+        The model's widths; its taps are ignored.
+    seed : int
+        Seed for the initial weights. This reseeds PyTorch's global random
+        number generators.
+
+    Returns
+    -------
+    torch.nn.Sequential
+        Maps inputs of shape ``(B, 12)`` to predictions of shape ``(B,)``.
+    """
+    torch.manual_seed(seed)
+    layers: list[torch.nn.Module] = []
+    in_width: int = len(FEATURES)
+    width: int
+    for width in hyperparameters.widths:
+        layers += [torch.nn.Linear(in_width, width), torch.nn.PReLU()]
+        in_width = width
+    layers += [torch.nn.Linear(in_width, 1), torch.nn.Flatten(0)]
+    return torch.nn.Sequential(*layers).to(torch.float64)
+
+
+def chunk_size(model: torch.nn.Module) -> int:
+    """Return the fixed number of rows to pass to ``model`` at once.
+
+    A VNN gets ``model.max_batch`` rows, which keeps every call within the
+    ROCm row limit; other models get ``PREDICT_BATCH``.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model.
+
+    Returns
+    -------
+    int
+    """
+    return model.max_batch if isinstance(model, VNN) else PREDICT_BATCH
+
+
 def predict(model: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
     """Predict without gradients, in fixed-size chunks.
 
@@ -173,7 +224,7 @@ def predict(model: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
     torch.Tensor
         Predictions, shape ``(n,)``.
     """
-    chunk: int = model.max_batch if isinstance(model, VNN) else PREDICT_BATCH
+    chunk: int = chunk_size(model)
     with torch.no_grad():
         return torch.cat([model(part) for part in torch.split(x, chunk)])
 

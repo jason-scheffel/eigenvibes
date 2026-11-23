@@ -21,7 +21,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 >
 > The data describe fictional Among Us players. Each player has 12 behavior numbers, such as time spent near vents or time spent alone, and a formula we chose turns them into a **sus score**: how suspicious the player looks. Neural networks learn to predict sus from the 12 numbers. Then we follow a group of players for four rounds. Impostors' sus rises every round, and crewmates' sus stays flat.
 >
-> We ask each trained network *why* impostors' sus rises, and compare its answer with the truth. The answer is one amount per behavior, and the amounts add up to the rise: for example, 0.3 of the rise came from `vent_lingering`, 0.2 from `time_alone`, and so on. It is computed in two steps:
+> We ask each trained network *why* impostors' sus rises, and compare its answer with the truth. The answer is one amount per behavior, and the amounts add up to the rise: for example, 1.0 of the rise came from `task_inactivity`, 0.125 from `task_abandonment`, and so on. It is computed in two steps:
 >
 > 1. Integrated Gradients [1] explains each single prediction: it splits the predicted sus into how much each behavior contributed.
 > 2. A mixed model (a regression for repeated measurements of the same players) combines those per-prediction amounts into amounts for the difference between the impostors' rise and the crewmates' rise.
@@ -30,10 +30,9 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 >
 > We compare:
 >
-> - **Networks.** A VNN (coVariance Neural Network [3]) uses the covariance matrix of the 12 behaviors as a graph that links behaviors that vary together, and each layer mixes every behavior with the behaviors it is linked to. One VNN is given the true covariance, and another estimates it from its training data. An MLP, a standard fully connected network, has no such built-in structure.
-> - **Behaviors or patterns.** Behaviors that change together form **patterns**, the eigenvectors of the covariance matrix. Each explanation can be given per behavior or per pattern. VNNs work in terms of patterns, so we check both.
+> - **Models.** A VNN (coVariance Neural Network [3]) uses the covariance matrix of the 12 behaviors, estimated from its training data, as a graph that links behaviors that vary together, and each layer mixes every behavior with the behaviors it is linked to. An MLP, a standard fully connected network, has no such built-in structure. Ridge regression, a linear model, is the simple baseline.
 > - **Two formulas for sus.** One adds up its parts; the other also multiplies two of them.
-> - **Harder cases.** Fewer players, players who miss rounds, a decoy behavior that rises for impostors but has no effect on sus, and a version where sus does not rise at all.
+> - **A decoy.** One behavior rises for impostors but has no effect on sus, so a correct explanation gives it no credit.
 >
 > [Datasets](#datasets) describes the data in detail.
 
@@ -71,109 +70,80 @@ Run scripts with `uv run python <script>`.
 
 ## Datasets
 
-`uv run python scripts/make_datasets.py download` downloads every dataset into `data/` (gitignored) from the [Hugging Face dataset](https://huggingface.co/datasets/jason-scheffel/eigenvibes), at a fixed upload. These are the exact files our results use, generated on the DGX. It then checks each file's SHA-256 hash against `data/SHA256SUMS`, which is in git, and stops with an error if any differs.
-
-`uv run python scripts/make_datasets.py generate` instead writes the datasets from their seeds, in a few seconds, and compares them with the same hashes. On a different CPU or library version some last digits can differ (between the DGX and a desktop, by at most 3.6e-15), so it only prints a warning and carries on; the data are still valid, just not bit-for-bit identical to ours. `cd data && sha256sum -c SHA256SUMS` runs the same check.
+`uv run python scripts/make_datasets.py download` downloads every dataset into `data/` (gitignored) from the [Hugging Face dataset](https://huggingface.co/datasets/jason-scheffel/eigenvibes), at the upload our results use. `uv run python scripts/make_datasets.py generate` instead writes them from their seeds in a few seconds. Another CPU may round the last digit of some numbers differently, which does not change any result.
 
 ### Files
 
 ```
 data/
-  SHA256SUMS                hashes of every file below (in git)
-  README.md                 the Hugging Face dataset card (in git)
-  covariance.csv            how the 12 behaviors vary together; the same for every dataset
-  design.json               settings and expected answers, for scoring only
-  linear/                   sus from the linear formula
+  README.md        the Hugging Face dataset card (in git)
+  covariance.csv   how the 12 behaviors vary together
+  design.json      the formulas, the cohort settings and the true answers
+  linear/          sus from the linear formula
     evaluation_00/ ... evaluation_29/
-      train.csv  validation.csv  test.csv
-      cohort_base.csv  cohort_100_players.csv  ...  (7 cohort versions)
+      train.csv  validation.csv  test.csv  cohort.csv
     tuning_30/ ... tuning_39/
       train.csv  validation.csv
-  interaction/              sus from the interaction formula; same layout
+  interaction/     sus from the interaction formula; same layout
 ```
 
-The number in a folder name is the random seed that made that dataset. Tuning datasets (30–39) are only for choosing hyperparameters with Optuna; evaluation datasets (0–29) are only for final results, so the two never share data. Datasets with the same number use the same random players under both formulas: `linear/evaluation_07/train.csv` and `interaction/evaluation_07/train.csv` have identical behavior columns, and only the `sus` column differs.
+The number in a folder name is the seed that made the dataset. Tuning datasets are only for choosing hyperparameters, and evaluation datasets are only for final results. Both formulas use the same players, so only the `sus` column differs between `linear/` and `interaction/`.
 
-| File | Rows | One row is | Columns |
-|---|---:|---|---|
-| `train.csv` | 2,000 | one made-up player, unrelated to every other row | 12 behaviors, `sus` |
-| `validation.csv` | 500 | same | same |
-| `test.csv` | 2,000 | same | same |
-| `cohort_<version>.csv` | 400–1,600 (see [Cohort versions](#cohort-versions)) | one player in one round; each player appears in up to 4 rounds | `player`, `round`, `impostor`, 12 behaviors, `sus` |
+| File | Rows | Columns |
+|---|---:|---|
+| `train.csv` | 2,000 | 12 behaviors, `sus` |
+| `validation.csv` | 500 | same |
+| `test.csv` | 2,000 | same |
+| `cohort.csv` | 800 | `player`, `round`, `impostor`, 12 behaviors, `sus` |
 
-`sus` includes random noise in `train.csv` and `validation.csv`, as real labels would, and is exact in `test.csv` and the cohort files.
+Read the files with `pandas.read_csv(..., float_precision="round_trip")` to get every value back exactly.
 
-Rules for models:
+### Behaviors
 
-- Train on `train.csv` and stop early on `validation.csv`. Select the 12 behavior columns by name.
-- The VNN with the true covariance reads `covariance.csv`; the other VNN computes its covariance from `train.csv`.
+Each row is a made-up player with 12 behavior scores. A score of 0 is a typical player, and every behavior has a standard deviation of 1. The behaviors are correlated because they come from three hidden play styles: slacking, sneaking and moving. `covariance.csv` holds the exact correlations.
 
-Read the files with full precision. pandas' default reader uses a fast method that changes the last digit of many values; `float_precision="round_trip"` makes it read every value back exactly as it was written:
-
-```python
-import pandas as pd
-
-train = pd.read_csv("data/interaction/evaluation_07/train.csv", float_precision="round_trip")
-```
-
-### What the numbers mean
-
-- **Behaviors** are unitless scores, not minutes or counts. 0 is a typical player, and negative means below typical. In `train.csv`, `validation.csv` and `test.csv` each behavior averages 0.
-- **`sus`** is a real number, not a probability or a 0–100 scale. In train, validation and test it averages 0, with a standard deviation of 1.5 (linear) or 1.8 (interaction). The noise in `train.csv` and `validation.csv` has a standard deviation of 0.15 (linear) or 0.18 (interaction).
-- **`round`** runs from 0 (first round) to 3. **`impostor`** is 1 for impostors and 0 for crewmates; players alternate, so every cohort is half impostors.
-- **In cohorts**, crewmates average sus 0.5 in every round. Impostors also start at 0.5 and gain 0.75 (linear) or 1.25 (interaction) per round. Cohort players don't center on the typical player, so expect larger prediction errors on cohorts than on `test.csv`.
-
-### The 12 behaviors
-
-| # | Column | Higher means |
+| # | Behavior | Play style |
 |---|---|---|
-| 1 | `task_inactivity` | less work on tasks |
-| 2 | `vent_lingering` | more time near vents |
-| 3 | `time_alone` | more time away from others |
-| 4 | `quiet_room_preference` | more time in low-traffic rooms |
-| 5 | `task_abandonment` | more tasks started and dropped |
-| 6 | `following_players` | more following of other players |
-| 7 | `distance_walked` | more total movement |
-| 8 | `room_changes` | more moves between rooms |
-| 9 | `walking_speed` | faster movement |
-| 10 | `hallway_time` | more time in hallways |
-| 11 | `route_variability` | less consistent routes |
-| 12 | `task_station_proximity` | more time near task stations |
+| 1 | `task_inactivity` | slacking |
+| 2 | `vent_lingering` | sneaking |
+| 3 | `time_alone` | sneaking, some slacking |
+| 4 | `quiet_room_preference` | sneaking |
+| 5 | `task_abandonment` | slacking |
+| 6 | `following_players` | sneaking, some moving |
+| 7 | `distance_walked` | moving |
+| 8 | `room_changes` | moving |
+| 9 | `walking_speed` | moving |
+| 10 | `hallway_time` | moving, some sneaking |
+| 11 | `route_variability` | slacking, some moving |
+| 12 | `task_station_proximity` | less slacking |
 
-Every behavior affects sus, through the patterns below.
+### Sus
 
-### Patterns and the two formulas
+- **linear:** sus = 2 `task_inactivity` + `vent_lingering` + 0.5 `task_abandonment`
+- **interaction:** the linear formula + `task_inactivity` × `vent_lingering`
 
-Behaviors that tend to change together form **patterns**: 12 fixed weighted mixes of the behaviors. They are the eigenvectors of the covariance in `covariance.csv`, numbered from the pattern that varies most (1) to the one that varies least (12). Every row is built from 12 random pattern scores, q1 to q12, and sus depends on three of them:
+The other 9 behaviors do not affect sus. In `train.csv` and `validation.csv`, sus also has noise with a standard deviation of 10% of sus's; in `test.csv` and `cohort.csv`, sus is exact.
 
-- **linear:** sus = q1 + 0.5 q2 + q5
-- **interaction:** sus = q1 + 0.5 q2 + q5 + q1 q2
+### Cohort
 
-| Pattern | What raises its score |
-|---|---|
-| 1 | all behaviors except `task_abandonment` and `following_players`, about equally |
-| 2 | more `task_inactivity` and `vent_lingering`, with less `time_alone` and `quiet_room_preference` |
-| 5 | more `task_abandonment` and `following_players` |
+The cohort follows 200 players for 4 rounds (0 to 3), and odd-numbered players are impostors. Part of each player's behavior stays the same every round (60% of the variance), and the rest changes from round to round. The cohort's players linger near vents more than the training players: their `vent_lingering` averages 1 instead of 0.
 
-The interaction formula tests whether models and their explanations handle two patterns whose effects multiply. `design.json` has the exact weights of all 12 patterns.
+Every round, impostors' `task_inactivity` rises by 0.5, their `task_abandonment` by 0.25 and their `route_variability` by 0.35. `route_variability` is a decoy, because it rises but does not affect sus.
 
-**Why sus is built from patterns.** Behaviors come from hidden play styles that change several behaviors at once: pattern 5, for example, is a player who drops more tasks and follows others more. Each pattern is one such play style, and sus depends on play styles rather than on single behaviors. Real data often works the same way; in [2], a brain-age effect came mostly from one pattern spread across many brain regions. Our results apply to scores like this, not to scores that depend on unrelated single behaviors.
+### True answers
 
-**The decoy.** Every round, impostors' behaviors also drift in a fixed direction that sus ignores: mostly more `route_variability`, with small changes to the other behaviors that cancel its effect on sus. Per pattern, the drift belongs only to patterns other than 1, 2 and 5, so an explanation should give those patterns no credit; one that does has been fooled by a correlation. Per behavior, the true answers do credit `route_variability`, because it is part of pattern 1, and the small changes to the other behaviors cancel that credit in total. `design.json` has the exact direction and the true answers per behavior and per pattern.
+Impostors' sus rises faster than crewmates' every round. Integrated Gradients splits each sus score among the behaviors, and the true answer is each behavior's share of that faster rise:
 
-### Cohort versions
+| Behavior | linear | interaction |
+|---|---:|---:|
+| `task_inactivity` | 1.000 | 1.250 |
+| `vent_lingering` | 0 | 0.250 |
+| `task_abandonment` | 0.125 | 0.125 |
+| `route_variability` (decoy) | 0 | 0 |
+| the other 8 | 0 | 0 |
+| **total** | **1.125** | **1.625** |
 
-Both `linear/` and `interaction/` have all seven. The versions reuse the same random draws: player 17 has identical rows in `base`, `100_players`, `400_players` and `missed_rounds`, and in `steady`, `jumpy` and `no_sus_change` the same draws are combined differently.
-
-| Version | Change from `base` | Rows | What it tests |
-|---|---|---:|---|
-| `base` | 200 players, rounds 0–3 | 800 | the main question: do the explanations find the true amounts? |
-| `100_players` | only players 0–99 | 400 | whether that still holds in a small study, where the group difference is measured less precisely |
-| `400_players` | 200 more players added | 1,600 | whether errors shrink with more players; errors that remain come from the model, not from too few players |
-| `steady` | each player's numbers change less from round to round, and players differ more from each other; total spread is unchanged | 800 | whether results depend on how much a player's numbers change between rounds: here the change is small |
-| `jumpy` | the opposite | 800 | the same question, with large changes between rounds |
-| `missed_rounds` | some rows removed: each player keeps rounds 0–3 (chance 1/2), 0–2 (1/4), or 0, 2 and 3 (1/4) | about 700 | whether the explanations still work with uneven data, as in real studies where people miss visits; the mixed model then weighs players differently |
-| `no_sus_change` | impostors' sus no longer rises; the decoy still does | 800 | whether the explanations invent a difference that isn't there; the true amounts per pattern are all 0, and the rising decoy tempts them to credit it |
+In the interaction formula, `vent_lingering` gets credit even though it does not change. The product term rises because `task_inactivity` rises while `vent_lingering` is high, and Integrated Gradients splits that rise evenly between the two behaviors.
 
 ## GPU benchmark
 
