@@ -45,6 +45,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 - [Tuning](#tuning)
 - [Final training](#final-training)
 - [Evaluation](#evaluation)
+- [Results](#results)
 - [Contributors](#contributors)
 - [Use of generative AI](#use-of-generative-ai)
 - [License](#license)
@@ -71,7 +72,7 @@ Run scripts with `uv run python <script>`.
 
 ## Datasets
 
-`uv run python scripts/make_datasets.py download` downloads every dataset into `data/` (gitignored) from the [Hugging Face dataset](https://huggingface.co/datasets/jason-scheffel/eigenvibes), at the upload our results use. `uv run python scripts/make_datasets.py generate` instead writes them from their seeds in a few seconds. Another CPU may round the last digit of some numbers differently, which does not change any result.
+`uv run python scripts/make_datasets.py download` downloads every dataset into `data/` (gitignored) from the [Hugging Face dataset](https://huggingface.co/datasets/jason-scheffel/eigenvibes), at the upload our results use. It also downloads our tuning studies and trained models into `results/tuning/` and `results/final/` (gitignored), so the [results](#results) can be reproduced without retraining. `uv run python scripts/make_datasets.py generate` instead writes them from their seeds in a few seconds. Another CPU may round the last digit of some numbers differently, which does not change any result.
 
 ### Files
 
@@ -199,7 +200,7 @@ It writes to `results/final/<formula>/<model>/` (gitignored), per dataset:
 
 ## Evaluation
 
-`uv run python scripts/evaluate.py` makes every table and figure from `data/` and `results/final/`, on the CPU in a few seconds. It also fits ridge regression on each evaluation dataset, with its penalty chosen on the validation split; its attributions are its coefficients times the behaviors.
+`uv run python scripts/evaluate.py` makes every table and figure from `data/` and `results/final/`, on the CPU in a few seconds. `results/final/` comes from final training or from `make_datasets.py download`. It also fits ridge regression on each evaluation dataset, with its penalty chosen on the validation split; its attributions are its coefficients times the behaviors.
 
 For each model and dataset, it splits the impostors' extra rise in sus into one amount per behavior: the impostor-by-round coefficient of a least squares fit to each behavior's attributions over the cohort. Every player is in every round, so this equals the fixed effect of a mixed model with a random intercept and slope per player. It compares the amounts with those of the true formula on the same cohort, so the error comes from the model alone.
 
@@ -209,6 +210,21 @@ It writes to `results/`:
 - `evaluation/contributions.csv`: every amount, for every formula, model and dataset.
 - `figures/contributions.{pdf,png}`: each model's mean amounts next to the true formula's.
 - `figures/trajectories.{pdf,png}`: mean sus by round for impostors and crewmates, with each model's mean prediction.
+
+## Results
+
+`uv run python scripts/make_datasets.py download` followed by `uv run python scripts/evaluate.py` reproduces these numbers. Each is a mean over the 30 evaluation datasets. The errors compare each model's amounts with those of the true formula on the same cohort, where the impostors' extra sus per round adds up to about 1.1 (linear) and 1.6 (interaction).
+
+| Formula | Model | Test R² | Mean error per behavior | Error of the total | Decoy's amount |
+|---|---|---:|---:|---:|---:|
+| linear | ridge | 0.9999 | 0.0007 | −0.003 | 0.000 |
+| linear | MLP | 0.9999 | 0.0008 | −0.005 | −0.002 |
+| linear | VNN | 0.996 | 0.005 | −0.022 | −0.001 |
+| interaction | ridge | 0.860 | 0.044 | −0.502 | 0.003 |
+| interaction | MLP | 0.998 | 0.005 | −0.036 | 0.001 |
+| interaction | VNN | 0.920 | 0.041 | −0.342 | 0.008 |
+
+Models that fit well give the right amounts. Ridge cannot represent the product term, so it gives `vent_lingering` none of its true 0.24 and misses about 0.5 of the 1.6 extra sus per round, close to a third. The VNN fits the interaction formula less well than the MLP, and it gives `vent_lingering` only 0.09. No model gives the decoy any real credit.
 
 ## Contributors
 

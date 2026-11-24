@@ -30,6 +30,9 @@ linear/                   sus from the linear formula
   tuning_30/ ... tuning_39/
     train.csv  validation.csv
 interaction/              sus from the interaction formula; same layout
+results/
+  tuning/                 the Optuna studies of the MLP and the VNN
+  final/                  the 120 trained models and their Integrated Gradients
 ```
 
 ## Download
@@ -40,7 +43,7 @@ From a clone of the project repository:
 uv run python scripts/make_datasets.py download
 ```
 
-Read the CSV files with `pandas.read_csv(..., float_precision="round_trip")` to get every value back exactly.
+This also downloads `results/` into the repository's `results/`. Read the CSV files with `pandas.read_csv(..., float_precision="round_trip")` to get every value back exactly.
 
 ## License
 
