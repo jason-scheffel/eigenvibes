@@ -224,7 +224,7 @@ It writes to `results/`:
 | interaction | MLP | 0.998 | 0.005 | −0.036 | 0.001 |
 | interaction | VNN | 0.920 | 0.041 | −0.342 | 0.008 |
 
-Models that fit well give the right amounts. Ridge cannot represent the product term, so it gives `vent_lingering` none of its true 0.24 and misses about half of the extra rise per round. The VNN fits the interaction formula less well than the MLP, and it gives `vent_lingering` only 0.09. No model gives the decoy any real credit.
+Models that fit well give the right amounts. Ridge cannot represent the product term, so it gives `vent_lingering` none of its true 0.24 and misses about 0.5 of the 1.6 extra sus per round, close to a third. The VNN fits the interaction formula less well than the MLP, and it gives `vent_lingering` only 0.09. No model gives the decoy any real credit.
 
 ## Contributors
 
