@@ -180,10 +180,13 @@ def build_mlp(hyperparameters: Hyperparameters, seed: int) -> torch.nn.Sequentia
     in_width: int = len(FEATURES)
     width: int
     for width in hyperparameters.widths:
-        layers += [torch.nn.Linear(in_width, width), torch.nn.PReLU()]
+        layers += [
+            torch.nn.Linear(in_width, width, dtype=torch.float64),
+            torch.nn.PReLU(dtype=torch.float64),
+        ]
         in_width = width
-    layers += [torch.nn.Linear(in_width, 1), torch.nn.Flatten(0)]
-    return torch.nn.Sequential(*layers).to(torch.float64)
+    layers += [torch.nn.Linear(in_width, 1, dtype=torch.float64), torch.nn.Flatten(0)]
+    return torch.nn.Sequential(*layers)
 
 
 def chunk_size(model: torch.nn.Module) -> int:

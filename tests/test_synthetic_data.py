@@ -115,7 +115,7 @@ def test_write_dataset(tmp_path: Path) -> None:
                 frame["sus"], sd.sus(frame[FEATURES].to_numpy(), interaction)
             )
         train: pd.DataFrame = frames[rule]["train"]
-        noise: np.ndarray = train["sus"] - sd.sus(
+        noise: np.ndarray = train["sus"].to_numpy() - sd.sus(
             train[FEATURES].to_numpy(), interaction
         )
         assert abs(noise.std() / sd.noise_sd(interaction) - 1) < 0.1
