@@ -1,30 +1,33 @@
 # SPDX-FileCopyrightText: 2026 Jason Scheffel <contact@jasonscheffel.com>
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tune the VNN's hyperparameters with Optuna on one GPU.
+"""Tune the VNN and the MLP with Optuna, one GPU per copy of this script.
 
-Each formula has one Optuna study, stored in ``results/tuning/<formula>.log``,
-an Optuna journal file that several copies of this script can share. A trial
-trains one set of hyperparameters on each of the 10 tuning datasets, with the
-covariance estimated from that dataset's training split and seed 42, and
-scores it by the mean validation MSE. A copy keeps ``SLOTS`` trainings running
-on its GPU, each in its own process; when one finishes, it starts the next
-dataset of an unfinished trial, or asks Optuna for a new trial. It stops once
-the study has ``TRIALS`` trials that are finished or running. A trial whose
-training diverges on some dataset is marked as failed with the user attribute
-``"diverged"`` and counts as finished.
+Each model and formula has one Optuna study, named ``<model>_<formula>`` and
+stored in ``results/tuning/<model>_<formula>.log``, an Optuna journal file
+that several copies of this script can share. A trial trains one set of
+hyperparameters on each of the 10 tuning datasets, with seed 42, and scores it
+by the mean validation MSE. A VNN uses the covariance estimated from the
+dataset's training split. A new study starts with the trials in ``STARTS``.
 
-The copy number names the copy. A trial records which copy ran it, and a copy
-that starts again marks its own unfinished trials as failed, so a stopped run
-resumes by starting the same copies again. Two copies must never share a copy
-number.
+``COPIES`` assigns each copy number to one study. A copy keeps ``SLOTS``
+trainings running on its GPU, each in its own process; when one finishes, it
+starts the next dataset of an unfinished trial, or asks Optuna for a new
+trial. It stops once the study has ``TRIALS`` trials that are finished or
+running. A trial whose training diverges on some dataset is marked as failed
+with the user attribute ``"diverged"`` and counts as finished.
 
-When it stops, a copy writes ``results/tuning/nodes/<formula>_<copy>_<job>.json``
-with its run time and the trainings it ran, and rewrites
-``results/tuning/summary.json`` from all such files and both studies.
+A trial records which copy ran it, and a copy that starts again marks its own
+unfinished trials as failed, so a stopped run resumes by starting the same
+copies again. Two copies must never share a copy number.
 
-Run it with ``uv run python scripts/tune.py <formula> <copy>``; on the DGX,
-submit ``scripts/tune.sbatch``, which starts 4 copies per formula.
+When it stops, a copy writes
+``results/tuning/nodes/<model>_<formula>_<copy>_<job>.json`` with its run time
+and the trainings it ran, and rewrites ``results/tuning/summary.json`` from
+all such files and all studies.
+
+Run it with ``uv run python scripts/tune.py <copy>``; on the DGX, submit
+``scripts/tune.sbatch``, which starts all 16 copies.
 """
 
 import concurrent.futures
@@ -37,9 +40,11 @@ import socket
 import statistics
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
+from types import FrameType
 
 import optuna
 import torch
@@ -51,14 +56,56 @@ from optuna.storages.journal import (
 )
 
 from eigenvibes import training
-from eigenvibes.synthetic_data import RULES, TUNING_SEEDS
+from eigenvibes.synthetic_data import TUNING_SEEDS
 from eigenvibes.training import Hyperparameters
 
 RESULTS: Path = Path(__file__).resolve().parent.parent / "results" / "tuning"
-TRIALS: int = 200
+TRIALS: int = 100
 SLOTS: int = 4
 SEED: int = 42
 DATASETS: tuple[str, ...] = tuple(f"tuning_{seed}" for seed in TUNING_SEEDS)
+
+# The study (model, formula) of each copy number.
+COPIES: tuple[tuple[str, str], ...] = (
+    *[("vnn", "interaction")] * 8,
+    *[("vnn", "linear")] * 6,
+    ("mlp", "linear"),
+    ("mlp", "interaction"),
+)
+# The first trials of each model's studies.
+STARTS: dict[str, tuple[dict[str, float], ...]] = {
+    "vnn": (
+        {
+            "lr": 0.0020255442967686693,
+            "batch_size": 16,
+            "layers": 4,
+            "width_0": 20,
+            "taps_0": 4,
+            "width_1": 228,
+            "taps_1": 8,
+            "width_2": 91,
+            "taps_2": 2,
+            "width_3": 28,
+            "taps_3": 6,
+        },
+        {
+            "lr": 0.0011279573912076257,
+            "batch_size": 16,
+            "layers": 4,
+            "width_0": 35,
+            "taps_0": 9,
+            "width_1": 251,
+            "taps_1": 9,
+            "width_2": 88,
+            "taps_2": 1,
+            "width_3": 158,
+            "taps_3": 5,
+        },
+    ),
+    "mlp": (
+        {"lr": 0.001, "batch_size": 32, "layers": 2, "width_0": 128, "width_1": 128},
+    ),
+}
 
 type Run = tuple[float, int, int, float]
 
@@ -73,6 +120,48 @@ def _storage(path: Path) -> JournalStorage:
     return JournalStorage(
         JournalFileBackend(str(path), lock_obj=JournalFileOpenLock(str(path)))
     )
+
+
+def open_study(model: str, formula: str, copy: int, results: Path) -> optuna.Study:
+    """Open a study, creating it with the trials in ``STARTS`` if it is new.
+
+    Parameters
+    ----------
+    model : str
+        ``"vnn"`` or ``"mlp"``.
+    formula : str
+        ``"linear"`` or ``"interaction"``.
+    copy : int
+        This copy's number, which seeds its sampler.
+    results : pathlib.Path
+        The folder holding the studies.
+
+    Returns
+    -------
+    optuna.Study
+        The study ``<model>_<formula>``.
+    """
+    name: str = f"{model}_{formula}"
+    study: optuna.Study = optuna.create_study(
+        study_name=name,
+        storage=_storage(results / f"{name}.log"),
+        load_if_exists=True,
+    )
+    # Seeded by the trial count too, so a restarted copy draws new trials
+    # instead of repeating the ones it already ran.
+    study.sampler = optuna.samplers.TPESampler(
+        seed=SEED + 1000 * copy + len(study.trials), constant_liar=True
+    )
+    # Copies start at the same time; one at a time checks for the start trials.
+    lock: JournalFileOpenLock = JournalFileOpenLock(str(results / name))
+    lock.acquire()
+    try:
+        params: dict[str, float]
+        for params in STARTS[model]:
+            study.enqueue_trial(params, skip_if_exists=True)
+    finally:
+        lock.release()
+    return study
 
 
 def _taken(study: optuna.Study, below: int) -> int:
@@ -95,12 +184,18 @@ def _start_worker() -> None:
 
 
 def train_one(
-    formula: str, dataset: str, hyperparameters: Hyperparameters, root: Path
+    model: str,
+    formula: str,
+    dataset: str,
+    hyperparameters: Hyperparameters,
+    root: Path,
 ) -> Run:
     """Train one model on one tuning dataset.
 
     Parameters
     ----------
+    model : str
+        ``"vnn"`` or ``"mlp"``.
     formula : str
         ``"linear"`` or ``"interaction"``.
     dataset : str
@@ -132,11 +227,15 @@ def train_one(
     x, y = training.load(formula, dataset, "train", root)
     x_valid, y_valid = training.load(formula, dataset, "validation", root)
     x, y, x_valid, y_valid = (t.to(device) for t in (x, y, x_valid, y_valid))
-    model: torch.nn.Module = training.build(torch.cov(x.T), hyperparameters, SEED)
+    network: torch.nn.Module = (
+        training.build(torch.cov(x.T), hyperparameters, SEED)
+        if model == "vnn"
+        else training.build_mlp(hyperparameters, SEED).to(device)
+    )
     result: tuple[float, int, int]
     try:
         result = training.train(
-            model,
+            network,
             x,
             y,
             x_valid,
@@ -152,6 +251,7 @@ def train_one(
 
 def tune(
     study: optuna.Study,
+    model: str,
     formula: str,
     copy: int,
     executor: concurrent.futures.Executor,
@@ -163,7 +263,9 @@ def tune(
     Parameters
     ----------
     study : optuna.Study
-        The formula's study.
+        The study of ``model`` and ``formula``.
+    model : str
+        ``"vnn"`` or ``"mlp"``.
     formula : str
         ``"linear"`` or ``"interaction"``.
     copy : int
@@ -201,21 +303,24 @@ def tune(
             return None
         # A stop between these two writes would leave a running trial that no
         # copy owns, so no restart would ever fail it. Hold SIGTERM until both
-        # are done; Windows can't hold signals, but Slurm doesn't run there.
-        if sys.platform != "win32":
-            signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+        # are done, then act on it.
+        held: list[int] = []
+        previous: (
+            signal.Handlers | Callable[[int, FrameType | None], object] | int | None
+        ) = signal.signal(signal.SIGTERM, lambda signum, frame: held.append(signum))
         try:
             new: optuna.Trial = study.ask()
             new.set_user_attr("copy", copy)
         finally:
-            if sys.platform != "win32":
-                signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTERM})
+            signal.signal(signal.SIGTERM, previous)
+            if held:
+                signal.raise_signal(signal.SIGTERM)
         # Another copy may have asked at the same moment; the lower number wins.
         taken: int = _taken(study, new.number)
         if taken >= TRIALS:
             study.tell(new, state=optuna.trial.TrialState.FAIL)
             return None
-        hyperparameters: Hyperparameters = training.suggest(new)
+        hyperparameters: Hyperparameters = training.suggest(new, model)
         open_trials[new.number] = (new, hyperparameters, list(DATASETS))
         runs[new.number] = {}
         started[new.number] = time.perf_counter()
@@ -227,7 +332,7 @@ def tune(
         while len(pending) < SLOTS and (task := next_task()) is not None:
             pending[
                 executor.submit(
-                    train_one, formula, task[1], open_trials[task[0]][1], root
+                    train_one, model, formula, task[1], open_trials[task[0]][1], root
                 )
             ] = task
         if not pending:
@@ -239,6 +344,10 @@ def tune(
         for future in done:
             number: int
             dataset: str
+            validation_mse: float
+            best_epoch: int
+            epochs: int
+            seconds: float
             number, dataset = pending.pop(future)
             validation_mse, best_epoch, epochs, seconds = future.result()
             counts["trainings"] += 1
@@ -279,7 +388,7 @@ def tune(
 
 
 def summarize(results: Path) -> dict[str, object]:
-    """Collect run times and the best trial of each formula's study.
+    """Collect run times and the best trial of each study.
 
     Parameters
     ----------
@@ -289,17 +398,17 @@ def summarize(results: Path) -> dict[str, object]:
     Returns
     -------
     dict[str, object]
-        One entry per formula whose study exists.
+        One entry per study that exists, named ``<model>_<formula>``.
     """
     summary: dict[str, object] = {}
+    model: str
     formula: str
-    for formula in RULES:
-        path: Path = results / f"{formula}.log"
+    for model, formula in sorted(set(COPIES)):
+        name: str = f"{model}_{formula}"
+        path: Path = results / f"{name}.log"
         if not path.exists():
             continue
-        study: optuna.Study = optuna.load_study(
-            study_name=formula, storage=_storage(path)
-        )
+        study: optuna.Study = optuna.load_study(study_name=name, storage=_storage(path))
         trials: list[optuna.trial.FrozenTrial] = study.get_trials(deepcopy=False)
         complete: list[optuna.trial.FrozenTrial] = [
             t for t in trials if t.state == optuna.trial.TrialState.COMPLETE
@@ -307,7 +416,7 @@ def summarize(results: Path) -> dict[str, object]:
         diverged: int = sum(t.user_attrs.get("diverged", False) for t in trials)
         nodes: list[dict[str, float]] = [
             json.loads(record.read_text(encoding="utf-8"))
-            for record in sorted((results / "nodes").glob(f"{formula}_*.json"))
+            for record in sorted((results / "nodes").glob(f"{name}_*.json"))
         ]
         runs: list[dict[str, float]] = [
             run for t in complete for run in t.user_attrs["datasets"].values()
@@ -337,9 +446,9 @@ def summarize(results: Path) -> dict[str, object]:
             entry["best_trial"] = {
                 "number": best.number,
                 "validation_mse": best.value,
-                "hyperparameters": asdict(training.suggest(best)),
+                "hyperparameters": asdict(training.suggest(best, model)),
             }
-        summary[formula] = entry
+        summary[name] = entry
     return summary
 
 
@@ -361,33 +470,30 @@ def _stop(signum: int, frame: object) -> None:
     sys.exit(128 + signum)
 
 
-def main(formula: str, copy: int) -> None:
-    """Tune one formula's VNN as copy number ``copy``.
+def main(copy: int) -> None:
+    """Tune the study that ``COPIES`` assigns to copy number ``copy``.
 
     Parameters
     ----------
-    formula : str
-        ``"linear"`` or ``"interaction"``.
     copy : int
-        This copy's number; see the module docstring.
+        This copy's number, from 0 to 15; see the module docstring.
     """
-    if formula not in RULES:
-        raise typer.BadParameter(f"formula must be one of {', '.join(RULES)}")
+    if not 0 <= copy < len(COPIES):
+        raise typer.BadParameter(f"copy must be from 0 to {len(COPIES) - 1}")
+    model: str
+    formula: str
+    model, formula = COPIES[copy]
+    name: str = f"{model}_{formula}"
     signal.signal(signal.SIGTERM, _stop)
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     RESULTS.mkdir(parents=True, exist_ok=True)
-    study: optuna.Study = optuna.create_study(
-        study_name=formula,
-        storage=_storage(RESULTS / f"{formula}.log"),
-        sampler=optuna.samplers.TPESampler(seed=SEED + copy, constant_liar=True),
-        load_if_exists=True,
-    )
+    study: optuna.Study = open_study(model, formula, copy, RESULTS)
     # The array's job ID, which also names the Slurm log files.
     job: str = os.environ.get("SLURM_ARRAY_JOB_ID") or os.environ.get(
         "SLURM_JOB_ID", "local"
     )
     began: datetime = datetime.now(UTC).astimezone()
-    _log(f"copy {copy} tuning {formula} on {socket.gethostname()}, job {job}")
+    _log(f"copy {copy} tuning {name} on {socket.gethostname()}, job {job}")
     counts: dict[str, float] = {"trials": 0, "trainings": 0, "training_seconds": 0.0}
     executor: concurrent.futures.ProcessPoolExecutor = (
         concurrent.futures.ProcessPoolExecutor(
@@ -397,14 +503,14 @@ def main(formula: str, copy: int) -> None:
         )
     )
     try:
-        tune(study, formula, copy, executor, counts)
+        tune(study, model, formula, copy, executor, counts)
     finally:
         # Stop running trainings too, rather than waiting for them.
         executor.terminate_workers()
         ended: datetime = datetime.now(UTC).astimezone()
         _write_json(
             {
-                "formula": formula,
+                "study": name,
                 "copy": copy,
                 "job": job,
                 "host": socket.gethostname(),
@@ -413,7 +519,7 @@ def main(formula: str, copy: int) -> None:
                 "hours": (ended - began).total_seconds() / 3600,
                 **counts,
             },
-            RESULTS / "nodes" / f"{formula}_{copy}_{job}.json",
+            RESULTS / "nodes" / f"{name}_{copy}_{job}.json",
         )
         # One copy at a time, so the last to write has seen every record.
         lock: JournalFileOpenLock = JournalFileOpenLock(str(RESULTS / "summary.json"))

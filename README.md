@@ -44,6 +44,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 - [GPU benchmark](#gpu-benchmark)
 - [Tuning](#tuning)
 - [Final training](#final-training)
+- [Evaluation](#evaluation)
 - [Contributors](#contributors)
 - [Use of generative AI](#use-of-generative-ai)
 - [License](#license)
@@ -165,50 +166,49 @@ A training step also takes about as long at batch size 2 as at 32 (about 3.3 ms 
 
 ## Tuning
 
-`scripts/tune.py` tunes the VNN's hyperparameters with [Optuna](https://optuna.org/), separately for each formula. A trial trains one set of hyperparameters on each of the 10 tuning datasets, with the covariance estimated from that dataset's `train.csv`, and its score is the mean validation MSE. Training uses Adam on MSE and stops after 25 epochs without a lower validation loss, or at 1,500 epochs, and keeps the weights of the best epoch. Every layer uses PReLU.
+`scripts/tune.py` tunes each model's hyperparameters with [Optuna](https://optuna.org/), separately for each formula, which makes four studies: `mlp_linear`, `mlp_interaction`, `vnn_linear` and `vnn_interaction`. A trial trains one set of hyperparameters on each of the 10 tuning datasets, and its score is the mean validation MSE. Training uses Adam on MSE, stops after 25 epochs without a lower validation loss (or at 1,500 epochs), and keeps the weights of the best epoch. A VNN uses the covariance estimated from the dataset's training split. Each study runs 100 trials and starts from known good settings: the two best VNNs of an earlier tuning run, and an MLP with two layers of 128.
 
 | Hyperparameter | Range |
 |---|---|
-| Learning rate | 1e-4 to 1e-1, log scale |
-| Batch size | 2, 4, 8, 16, 32, 64, 128, or 256 |
+| Learning rate | 1e-4 to 1e-2, log scale |
+| Batch size | 16, 32, 64 or 128 |
 | Layers | 1 to 4 |
-| Channels per layer | 1 to 256 |
-| Filter taps per layer | 1 to 12 |
+| Width per layer | 1 to 256 |
+| VNN filter taps per layer | 1 to 12 |
 
-On the DGX, `sbatch scripts/tune.sbatch` starts 8 copies of the script, one A100 each: copies 0–3 tune the linear formula and 4–7 the interaction formula. Each copy trains 4 models at a time (see [GPU benchmark](#gpu-benchmark)). When one finishes, it starts the next dataset of a trial it is running, or else asks Optuna for a new trial. The copies of a formula share one Optuna study and stop when it has 200 trials. To resume a stopped run, submit the job again; each copy marks only its own unfinished trials as failed.
+On the DGX, first download the data on the login node, then submit the job:
 
-It writes to `results/` (gitignored):
+```
+uv run python scripts/make_datasets.py download
+sbatch scripts/tune.sbatch
+```
 
-- `results/tuning/<formula>.log`: the Optuna study, as an Optuna journal file, which several machines can share safely. It holds each trial's hyperparameters and score, and for each finished trial, every dataset's validation MSE, epochs, and training time. Open it with `optuna.load_study` and `JournalStorage`.
-- `results/tuning/nodes/<formula>_<copy>_<job>.json`: each copy's run time and how many trainings it finished.
-- `results/tuning/summary.json`, per formula:
-  - **wall hours**, from the first trial's start to the last trial's end, including any wait between a stopped job and its resubmission;
-  - **GPU hours**, the total time the copies held a GPU;
-  - **training hours**, the total time of all trainings. With 4 trainings per GPU, one GPU hour holds up to 4 training hours;
-  - the median and longest training time, the median number of epochs, the number of finished and diverged trials, and the best trial.
-- `tune-<job>_<copy>.out` in the clone: a line for every finished training and trial.
+It starts 16 copies of the script, one A100 each: copies 0–7 tune `vnn_interaction`, 8–13 `vnn_linear`, 14 `mlp_linear` and 15 `mlp_interaction`. Each copy trains 4 models at a time (see [GPU benchmark](#gpu-benchmark)). To resume a stopped run, submit the job again. To run one copy on another machine, use `uv run python scripts/tune.py <copy>`.
 
-From the benchmark, tuning should take roughly 3 to 36 hours, depending mostly on which batch sizes Optuna favors; it has not been measured yet.
+It writes to `results/tuning/` (gitignored): each study as an Optuna journal file `<study>.log`, each copy's run time in `nodes/`, and `summary.json` with the best trial of each study.
 
 ## Final training
 
-After tuning, `scripts/train_final.py` trains the final VNNs on the 30 evaluation datasets with the best trial's hyperparameters for each formula. It refuses to start until both studies have 200 finished trials. Each formula gets two kinds of VNN:
+After tuning, `sbatch scripts/train_final.sbatch` trains the final models: for each formula, model and evaluation dataset, one model with seed 42 and the best hyperparameters of its study, 120 models in all. It refuses to start until every study has 100 finished trials. A model stops early on its validation split and is scored on `test.csv`, whose sus has no noise, by RMSE and R². Integrated Gradients then explains its prediction for every row of the dataset's `cohort.csv`, from the all-zero player, with 512 steps.
 
-- **true covariance**: the VNN uses `data/covariance.csv`, the covariance the behaviors were drawn from, for training and predicting;
-- **estimated covariance**: the VNN uses the covariance of its dataset's `train.csv`, as in tuning.
+It writes to `results/final/<formula>/<model>/` (gitignored), per dataset:
 
-Each kind is trained on each evaluation dataset with seeds 0, 1, and 2, which gives 2 formulas × 2 kinds × 30 datasets × 3 seeds = 360 models. A model trains as in tuning and stops early on its own `validation.csv`. It is then scored on `test.csv`, whose `sus` has no noise, by the RMSE and R² of its predictions.
+- `<dataset>.pt`: the weights, the hyperparameters and the scores, plus the covariance for a VNN.
+- `<dataset>_ig.csv`: per cohort row, its `player`, `round`, `impostor`, the model's `prediction`, and one attribution per behavior.
+- `<dataset>.json`: the scores, the epochs, the training time, and the completeness gap: the largest difference between a row's attributions added up and its prediction minus the prediction for the all-zero player.
 
-On the DGX, `sbatch scripts/train_final.sbatch` starts 8 copies of the script, one A100 each. Each copy trains a fixed 45 of the 360 models, 4 at a time. A copy skips models that are already saved, so submitting the job again resumes a stopped run.
+## Evaluation
 
-It writes to `results/final/` (gitignored):
+`uv run python scripts/evaluate.py` makes every table and figure from `data/` and `results/final/`, on the CPU in a few seconds. It also fits ridge regression on each evaluation dataset, with its penalty chosen on the validation split; its attributions are its coefficients times the behaviors.
 
-- `<formula>/<covariance>/<dataset>_seed_<seed>.pt`: the trained model, which `torch.load` reads. It holds the `state_dict`, the covariance matrix the model was built with (as `covariance_matrix`, since the VNN's `state_dict` does not include it), the hyperparameters and tuning trial, and the scores below. `training.build` with that matrix, the hyperparameters, and the seed, followed by `load_state_dict`, restores the model.
-- `<formula>/<covariance>/<dataset>_seed_<seed>.json`: the same values without the weights: validation MSE, best epoch, epochs, test RMSE and R², whether training diverged, and the training time.
-- `metrics.csv`: one row per model with those values.
-- `nodes/<copy>_<job>.json`: each copy's run time and how many models it trained.
-- `summary.json`: GPU hours and training hours (as in [Tuning](#tuning)), and per formula, the tuning trial and hyperparameters, and per kind of covariance, the number of models, how many diverged, and the mean and standard deviation of the test RMSE and R².
-- `final-<job>_<copy>.out` in the clone: a line for every finished model.
+For each model and dataset, it splits the impostors' extra rise in sus into one amount per behavior: the impostor-by-round coefficient of a least squares fit to each behavior's attributions over the cohort. Every player is in every round, so this equals the fixed effect of a mixed model with a random intercept and slope per player. It compares the amounts with those of the true formula on the same cohort, so the error comes from the model alone.
+
+It writes to `results/`:
+
+- `evaluation/summary.csv` and `summary.tex`: per formula and model, the mean test R², the mean absolute error of the 12 amounts, the decoy's amount, the error of their total, and the attributions' RMSE per cohort row, with standard errors over the 30 datasets.
+- `evaluation/contributions.csv`: every amount, for every formula, model and dataset.
+- `figures/contributions.{pdf,png}`: each model's mean amounts next to the true formula's.
+- `figures/trajectories.{pdf,png}`: mean sus by round for impostors and crewmates, with each model's mean prediction.
 
 ## Contributors
 
