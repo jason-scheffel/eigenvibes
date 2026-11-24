@@ -4,11 +4,11 @@
 #
 # Usage, from a clone in your lab directory, after tuning has finished:
 # sbatch scripts/train_final.sbatch
-# Each of the 16 copies trains and explains its 7 or 8 of the 120 final models
-# on one A100. Submit it again to resume a stopped run.
+# Each of the 8 copies trains and explains its 15 of the 120 final models on
+# one A100. Submit it again to resume a stopped run.
 
 #SBATCH --job-name=eigenvibes-final
-#SBATCH --array=0-15
+#SBATCH --array=0-7
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8

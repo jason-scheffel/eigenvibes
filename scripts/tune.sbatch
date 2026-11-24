@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Usage, from a clone in your lab directory: sbatch scripts/tune.sbatch
-# Each copy tunes one study on one A100: copies 0-7 vnn_interaction, 8-13
-# vnn_linear, 14 mlp_linear, and 15 mlp_interaction (COPIES in tune.py).
+# Each copy tunes one study on one A100: copies 0-3 vnn_interaction, 4-5
+# vnn_linear, 6 mlp_linear, and 7 mlp_interaction (COPIES in tune.py).
 # Submit it again to resume a stopped run.
 
 #SBATCH --job-name=eigenvibes-tune
-#SBATCH --array=0-15
+#SBATCH --array=0-7
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8

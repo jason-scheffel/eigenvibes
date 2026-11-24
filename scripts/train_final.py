@@ -27,7 +27,7 @@ its run time, and rewrites ``results/final/metrics.csv``, one row per saved
 model, and ``results/final/summary.json``.
 
 Run it with ``uv run python scripts/train_final.py <copy>``; on the DGX,
-submit ``scripts/train_final.sbatch``, which starts all 16 copies.
+submit ``scripts/train_final.sbatch``, which starts all 8 copies.
 """
 
 import concurrent.futures
@@ -55,7 +55,7 @@ from eigenvibes.synthetic_data import EVALUATION_SEEDS, FEATURES, RULES
 from eigenvibes.training import MODELS, Hyperparameters
 
 RESULTS: Path = Path(__file__).resolve().parent.parent / "results" / "final"
-COPIES: int = 16
+COPIES: int = 8
 SLOTS: int = 4
 SEED: int = 42
 DATASETS: tuple[str, ...] = tuple(f"evaluation_{seed:02d}" for seed in EVALUATION_SEEDS)

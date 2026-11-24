@@ -176,14 +176,14 @@ A training step also takes about as long at batch size 2 as at 32 (about 3.3 ms 
 | Width per layer | 1 to 256 |
 | VNN filter taps per layer | 1 to 12 |
 
-On the DGX, first download the data on the login node, then submit the job:
+On the DGX, download the data with a small CPU job (the login node does not give uv enough memory), then submit the tuning job from the clone:
 
 ```
-uv run python scripts/make_datasets.py download
+srun --cpus-per-task=4 --mem=16G --time=00:30:00 uvx --from huggingface-hub hf download jason-scheffel/eigenvibes --repo-type dataset --revision dbdc1ef9d1e1fe45294538756ec17e0e7ede074d --local-dir data
 sbatch scripts/tune.sbatch
 ```
 
-It starts 16 copies of the script, one A100 each: copies 0–7 tune `vnn_interaction`, 8–13 `vnn_linear`, 14 `mlp_linear` and 15 `mlp_interaction`. Each copy trains 4 models at a time (see [GPU benchmark](#gpu-benchmark)). To resume a stopped run, submit the job again. To run one copy on another machine, use `uv run python scripts/tune.py <copy>`.
+It starts 8 copies of the script, one A100 each: copies 0–3 tune `vnn_interaction`, 4–5 `vnn_linear`, 6 `mlp_linear` and 7 `mlp_interaction`. Each copy trains 4 models at a time (see [GPU benchmark](#gpu-benchmark)). To resume a stopped run, submit the job again. To run one copy on another machine, use `uv run python scripts/tune.py <copy>`.
 
 It writes to `results/tuning/` (gitignored): each study as an Optuna journal file `<study>.log`, each copy's run time in `nodes/`, and `summary.json` with the best trial of each study.
 

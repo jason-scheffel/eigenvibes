@@ -27,7 +27,7 @@ and the trainings it ran, and rewrites ``results/tuning/summary.json`` from
 all such files and all studies.
 
 Run it with ``uv run python scripts/tune.py <copy>``; on the DGX, submit
-``scripts/tune.sbatch``, which starts all 16 copies.
+``scripts/tune.sbatch``, which starts all 8 copies.
 """
 
 import concurrent.futures
@@ -67,8 +67,8 @@ DATASETS: tuple[str, ...] = tuple(f"tuning_{seed}" for seed in TUNING_SEEDS)
 
 # The study (model, formula) of each copy number.
 COPIES: tuple[tuple[str, str], ...] = (
-    *[("vnn", "interaction")] * 8,
-    *[("vnn", "linear")] * 6,
+    *[("vnn", "interaction")] * 4,
+    *[("vnn", "linear")] * 2,
     ("mlp", "linear"),
     ("mlp", "interaction"),
 )
@@ -476,7 +476,7 @@ def main(copy: int) -> None:
     Parameters
     ----------
     copy : int
-        This copy's number, from 0 to 15; see the module docstring.
+        This copy's number, from 0 to 7; see the module docstring.
     """
     if not 0 <= copy < len(COPIES):
         raise typer.BadParameter(f"copy must be from 0 to {len(COPIES) - 1}")
